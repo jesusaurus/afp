@@ -81,7 +81,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     c= avcodec_alloc_context();
 
-    /* open it */
+    /* open the codec */
     if (avcodec_open(c, codec) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
@@ -89,43 +89,38 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 
-    // f = fopen(filename, "rb");
-    // if (!f) {
-    //     fprintf(stderr, "could not open %s\n", filename);
-    //     exit(1);
-    // }
-    // 
+	/* use libavformat to open the source file; initializes AVFormatContext */
     if (err = av_open_input_file(&fctx, filename, NULL, 0, NULL) < 0) {
         fprintf(stderr, "av_open_input_file: error %d\n", err);
         exit(1);
     }
 
+	/* find the input file's stream - assume this further sets up info w/in the AVFormatContext */
     err = av_find_stream_info(fctx);
     if (err < 0) {
         fprintf(stderr, "av_find_stream_info: error %d\n", err);
         exit(1);
     }
 
+	/* open the output file */
     outfile = fopen(outfilename, "wb");
     if (!outfile) {
         av_free(c);
         exit(1);
     }
 
-    /* decode until eof */
-    // avpkt.data = inbuf;
-    // avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
-
+	/* read frames into the AVPacket, then decode them */
     while ((err = av_read_frame(fctx, &avpkt)) >= 0) {
 		fprintf(stderr, "dts: %lld pts: %lld len: %d pkt size: %d out size: %d\n", avpkt.dts, avpkt.pts, len, avpkt.size, out_size);
 
-	   // while (avpkt.size > 0) {
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+
         len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
         if (len < 0) {
             fprintf(stderr, "Error while decoding\n");
             exit(1);
         }
+
         if (out_size > 0) {
             /* if a frame has been decoded, output it */
             fwrite(outbuf, 1, out_size, outfile);
