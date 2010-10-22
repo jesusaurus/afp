@@ -44,9 +44,9 @@
 #endif
 
 
-#include "libavformat/avformat.h"
-#include "libavcodec/avcodec.h"
-#include "libavutil/mathematics.h"
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/mathematics.h>
 
 
 #define INBUF_SIZE 4096
@@ -118,6 +118,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
+		/* did libavformat just hand us an ID3V1 tag? */
 		if (!((avpkt.data[0] == 'T') && (avpkt.data[1] == 'A') && (avpkt.data[2] == 'G'))) {
 	        len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
 	        if (len < 0) {
