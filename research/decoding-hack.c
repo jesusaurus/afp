@@ -49,8 +49,6 @@
 #include <libavutil/mathematics.h>
 
 
-#define INBUF_SIZE 4096
-#define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
 
@@ -63,9 +61,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     AVFormatContext *fctx;
     int out_size, len, err;
-    FILE *f, *outfile;
+    FILE *outfile;
     uint8_t *outbuf;
-    uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
 
     av_init_packet(&avpkt);
@@ -90,7 +87,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 
 	/* use libavformat to open the source file; initializes AVFormatContext */
-    if (err = av_open_input_file(&fctx, filename, NULL, 0, NULL) < 0) {
+    if ((err = av_open_input_file(&fctx, filename, NULL, 0, NULL)) < 0) {
         fprintf(stderr, "av_open_input_file: error %d\n", err);
         exit(1);
     }
@@ -137,7 +134,6 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     }
 
     fclose(outfile);
-    fclose(f);
     free(outbuf);
 
     avcodec_close(c);
