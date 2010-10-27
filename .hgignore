@@ -1,0 +1,9 @@
+syntax: glob
+
+*.a
+*.o
+*.6
+*.swp
+*.so
+a.out*
+*cgo*
