@@ -1,0 +1,7 @@
+To build:
+gomake open; gomake write
+
+To run & test:
+./open | tee test.raw | ./write
+
+NB: Currently, open assumes ./test.in exists (and is an mp3) and write will (should) write to test.out (also in mp3 format).
