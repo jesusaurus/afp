@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-include /Users/eric/src/go/src/Make.inc
+include $(GOROOT)/src/Make.inc
 
 TARG=libav
 CGOFILES=libav.go
@@ -14,5 +14,5 @@ libavtest: install main.go
 			$(GC) main.go
 			$(LD) -o $@ main.$O
 			
-include /Users/eric/src/go/src/Make.pkg
+include $(GOROOT)/src/Make.pkg
 
