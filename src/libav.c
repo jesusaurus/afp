@@ -57,7 +57,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
     }
     
 	/* alloc the output buffer for libavcodec */
-	context->Outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
+	context->Outbuf = (int16_t *)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 	context->Buf_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
     
 	/* use libavformat to open the source file; initializes AVFormatContext */
