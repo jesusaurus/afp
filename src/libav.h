@@ -16,7 +16,7 @@ typedef struct {
 	AVCodec *Codec;
 	AVFormatContext *Fctx;
 	AVCodecContext *Cctx;
-	uint8_t *Outbuf;
+	int16_t *Outbuf;
 	long Buf_size, Buf_len;
 	AVPacket Packet;
 } AVDecodeContext;
