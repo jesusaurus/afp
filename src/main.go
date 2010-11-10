@@ -10,15 +10,11 @@ func main() {
 	libav.InitDecoding()
 	libav.PrepareDecoding("/tmp/test.mp3", &context)
 	for l := libav.DecodePacket(context); l > 0; {
-/*		println("Packet decode: ", l, " bytes")*/
 		l = libav.DecodePacket(context)
 		sample := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:l/2]
 
-/*		for i := 0; i < l/2; i++ {
-			print(sample[i], " ")
-		}
-*/		for j,s := range sample {
-			if (j % 2 == 0) {
+		for j,s := range sample {
+			if (j % 32 == 0) {
 				width := 236
 				half := int16(width/2) 
 				offset := int16(float(s) * float(width) / 65535.0)
@@ -29,8 +25,6 @@ func main() {
 				println("#")
 			}
 		}
-/*		println("Decoded ", l, " bytes, oh joy!")
-		println("Context shows a packet at: ", []int16(reflect.MakeSlice(unsafe.Pointer(context.Context.Outbuf))))*/
 	}
 	
 }
