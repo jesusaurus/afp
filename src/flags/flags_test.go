@@ -4,10 +4,10 @@
 // Modifications Copyright 2010 Aaron DeVore
 // MIT License
 
-package flag_test
+package flags_test
 
 import (
-	. "flag"
+	"./flags"
 	"fmt"
 	"testing"
 )
@@ -20,21 +20,21 @@ func boolString(s string) string {
 }
 
 func TestEverything(t *testing.T) {
-	m := make(map[string]*Flag)
+	m := make(map[string] *flags.Flag)
 	args := []string{"command"}
-	parser := FlagParser(args)
-// 	var (
-// 		test_bool    = parser.Bool("test_bool", false, "bool value")
-// 		test_int     = parser.Int("test_int", 0, "int value")
-// 		test_int64   = parser.Int64("test_int64", 0, "int64 value")
-// 		test_uint    = parser.Uint("test_uint", 0, "uint value")
-// 		test_uint64  = parser.Uint64("test_uint64", 0, "uint64 value")
-// 		test_string  = parser.String("test_string", "0", "string value")
-// 		test_float   = parser.Float("test_float", 0, "float value")
-// 		test_float64 = parser.Float("test_float64", 0, "float64 value")
-// 	)
+	parser := flags.FlagParser(args)
+	var (
+		_  = parser.Bool("test_bool", false, "bool value")
+		_  = parser.Int("test_int", 0, "int value")
+		_  = parser.Int64("test_int64", 0, "int64 value")
+		_  = parser.Uint("test_uint", 0, "uint value")
+		_  = parser.Uint64("test_uint64", 0, "uint64 value")
+		_  = parser.String("test_string", "0", "string value")
+		_  = parser.Float("test_float", 0, "float value")
+		_  = parser.Float("test_float64", 0, "float64 value")
+	)
 	desired := "0"
-	visitor := func(f *Flag) {
+	visitor := func(f *flags.Flag) {
 		if len(f.Name) > 5 && f.Name[0:5] == "test_" {
 			m[f.Name] = f
 			ok := false
@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 		"-float64", "2718e28",
 		extra,
 	}
-	parser := FlagParser(args)
+	parser := flags.FlagParser(args)
 	boolFlag := parser.Bool("bool", false, "bool value")
 	bool2Flag := parser.Bool("bool2", false, "bool2 value")
 	intFlag := parser.Int("int", 0, "int value")
@@ -135,7 +135,7 @@ func (f *flagVar) Set(value string) bool {
 
 func TestUserDefined(t *testing.T) {
 	var v flagVar
-	parser := FlagParser([]string{"a.out", "-v", "1", "-v", "2", "-v=3"})
+	parser := flags.FlagParser([]string{"a.out", "-v", "1", "-v", "2", "-v=3"})
 	parser.Var(&v, "v", "usage")
 	defer func() {
 		if recover() != nil {
