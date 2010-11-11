@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+// Modifications Copyright 2010 Aaron DeVore
+// MIT License
 
 package flag_test
 
@@ -8,17 +10,6 @@ import (
 	. "flag"
 	"fmt"
 	"testing"
-)
-
-var (
-	test_bool    = Bool("test_bool", false, "bool value")
-	test_int     = Int("test_int", 0, "int value")
-	test_int64   = Int64("test_int64", 0, "int64 value")
-	test_uint    = Uint("test_uint", 0, "uint value")
-	test_uint64  = Uint64("test_uint64", 0, "uint64 value")
-	test_string  = String("test_string", "0", "string value")
-	test_float   = Float("test_float", 0, "float value")
-	test_float64 = Float("test_float64", 0, "float64 value")
 )
 
 func boolString(s string) string {
@@ -30,78 +21,44 @@ func boolString(s string) string {
 
 func TestEverything(t *testing.T) {
 	m := make(map[string]*Flag)
+	args := []string{"command"}
+	parser := FlagParser(args)
+// 	var (
+// 		test_bool    = parser.Bool("test_bool", false, "bool value")
+// 		test_int     = parser.Int("test_int", 0, "int value")
+// 		test_int64   = parser.Int64("test_int64", 0, "int64 value")
+// 		test_uint    = parser.Uint("test_uint", 0, "uint value")
+// 		test_uint64  = parser.Uint64("test_uint64", 0, "uint64 value")
+// 		test_string  = parser.String("test_string", "0", "string value")
+// 		test_float   = parser.Float("test_float", 0, "float value")
+// 		test_float64 = parser.Float("test_float64", 0, "float64 value")
+// 	)
 	desired := "0"
 	visitor := func(f *Flag) {
 		if len(f.Name) > 5 && f.Name[0:5] == "test_" {
 			m[f.Name] = f
 			ok := false
 			switch {
-			case f.Value.String() == desired:
-				ok = true
-			case f.Name == "test_bool" && f.Value.String() == boolString(desired):
-				ok = true
+				case f.Value.String() == desired:
+					ok = true
+				case f.Name == "test_bool" && f.Value.String() == boolString(desired):
+					ok = true
 			}
 			if !ok {
 				t.Error("Visit: bad value", f.Value.String(), "for", f.Name)
 			}
 		}
 	}
-	VisitAll(visitor)
+	parser.VisitAll(visitor)
 	if len(m) != 8 {
 		t.Error("VisitAll misses some flags")
 		for k, v := range m {
 			t.Log(k, *v)
 		}
 	}
-	m = make(map[string]*Flag)
-	Visit(visitor)
-	if len(m) != 0 {
-		t.Errorf("Visit sees unset flags")
-		for k, v := range m {
-			t.Log(k, *v)
-		}
-	}
-	// Now set all flags
-	Set("test_bool", "true")
-	Set("test_int", "1")
-	Set("test_int64", "1")
-	Set("test_uint", "1")
-	Set("test_uint64", "1")
-	Set("test_string", "1")
-	Set("test_float", "1")
-	Set("test_float64", "1")
-	desired = "1"
-	Visit(visitor)
-	if len(m) != 8 {
-		t.Error("Visit fails after set")
-		for k, v := range m {
-			t.Log(k, *v)
-		}
-	}
-}
-
-func TestUsage(t *testing.T) {
-	called := false
-	ResetForTesting(func() { called = true })
-	if ParseForTesting([]string{"a.out", "-x"}) {
-		t.Error("parse did not fail for unknown flag")
-	}
-	if !called {
-		t.Error("did not call Usage for unknown flag")
-	}
 }
 
 func TestParse(t *testing.T) {
-	ResetForTesting(func() { t.Error("bad parse") })
-	boolFlag := Bool("bool", false, "bool value")
-	bool2Flag := Bool("bool2", false, "bool2 value")
-	intFlag := Int("int", 0, "int value")
-	int64Flag := Int64("int64", 0, "int64 value")
-	uintFlag := Uint("uint", 0, "uint value")
-	uint64Flag := Uint64("uint64", 0, "uint64 value")
-	stringFlag := String("string", "0", "string value")
-	floatFlag := Float("float", 0, "float value")
-	float64Flag := Float("float64", 0, "float64 value")
 	extra := "one-extra-argument"
 	args := []string{
 		"a.out",
@@ -116,9 +73,17 @@ func TestParse(t *testing.T) {
 		"-float64", "2718e28",
 		extra,
 	}
-	if !ParseForTesting(args) {
-		t.Fatal("parse failed")
-	}
+	parser := FlagParser(args)
+	boolFlag := parser.Bool("bool", false, "bool value")
+	bool2Flag := parser.Bool("bool2", false, "bool2 value")
+	intFlag := parser.Int("int", 0, "int value")
+	int64Flag := parser.Int64("int64", 0, "int64 value")
+	uintFlag := parser.Uint("uint", 0, "uint value")
+	uint64Flag := parser.Uint64("uint64", 0, "uint64 value")
+	stringFlag := parser.String("string", "0", "string value")
+	floatFlag := parser.Float("float", 0, "float value")
+	float64Flag := parser.Float("float64", 0, "float64 value")
+	parser.Parse()
 	if *boolFlag != true {
 		t.Error("bool flag should be true, is ", *boolFlag)
 	}
@@ -146,10 +111,10 @@ func TestParse(t *testing.T) {
 	if *float64Flag != 2718e28 {
 		t.Error("float64 flag should be 2718e28, is ", *float64Flag)
 	}
-	if len(Args()) != 1 {
-		t.Error("expected one argument, got", len(Args()))
-	} else if Args()[0] != extra {
-		t.Errorf("expected argument %q got %q", extra, Args()[0])
+	if len(parser.Args()) != 1 {
+		t.Error("expected one argument, got", len(parser.Args()))
+	} else if parser.Args()[0] != extra {
+		t.Errorf("expected argument %q got %q", extra, parser.Args()[0])
 	}
 }
 
@@ -169,12 +134,14 @@ func (f *flagVar) Set(value string) bool {
 }
 
 func TestUserDefined(t *testing.T) {
-	ResetForTesting(func() { t.Fatal("bad parse") })
 	var v flagVar
-	Var(&v, "v", "usage")
-	if !ParseForTesting([]string{"a.out", "-v", "1", "-v", "2", "-v=3"}) {
-		t.Error("parse failed")
-	}
+	parser := FlagParser([]string{"a.out", "-v", "1", "-v", "2", "-v=3"})
+	parser.Var(&v, "v", "usage")
+	defer func() {
+		if recover() != nil {
+			t.Error("parse failed")
+		}
+	}()
 	if len(v) != 3 {
 		t.Fatal("expected 3 args; got ", len(v))
 	}
