@@ -10,9 +10,12 @@
 
 	Usage:
 	1) Initialize a parser object
-	2) Define flags using parser.String(), Bool(), Int(), etc. Example:
-		import "fightclub/flag"
-		parser = FlagParser()
+	2) Define flags using parser's String(), Bool(), Int(), etc. Example:
+		import (
+			"fightclub/flag",
+			"os"
+			)
+		parser := FlagParser(os.Args)
 		var ip *int = parser.Int("flagname", 1234, "help message for flagname")
 	If you like, you can bind the flag to a variable using the Var() functions.
 		var flagvar int
@@ -54,7 +57,7 @@
 	Integer flags accept 1234, 0664, 0x1234 and may be negative.
 	Boolean flags may be 1, 0, t, f, true, false, TRUE, FALSE, True, False.
 */
-package flag
+package flags
 
 import (
 	"fmt"
@@ -204,42 +207,46 @@ type Flag struct {
 	DefValue string // default value (as text); for usage message
 }
 
-type allFlags struct {
+// Internal: Type for FlagParser
+type FlagParserType struct {
+	args []string
+
+	// From allFlags in stdlib version
 	actual    map[string]*Flag
 	formal    map[string]*Flag
 	first_arg int // 0 is the program name, 1 is first arg
 }
 
-var flags *allFlags
-
-// TODO: Decide on the contents of the struct
-type FlagParser struct {
-	flags *allFlags
-	CustomUsage func()
+// Factory Function for a flag parser that will act on the given arguments
+func FlagParser(args []string) *FlagParserType {
+	parser := new(FlagParserType)
+	parser.args = args
+	return parser
+}
 
 // VisitAll visits the flags, calling fn for each. It visits all flags, even those not set.
-func (self *FlagParser) VisitAll(fn func(*Flag)) {
-	for _, f := range self.flags.formal {
+func (self *FlagParserType) VisitAll(fn func(*Flag)) {
+	for _, f := range self.formal {
 		fn(f)
 	}
 }
 
 // Visit visits the flags, calling fn for each. It visits only those flags that have been set.
-func (self *FlagParser) Visit(fn func(*Flag)) {
-	for _, f := range self.flags.actual {
+func (self *FlagParserType) Visit(fn func(*Flag)) {
+	for _, f := range self.actual {
 		fn(f)
 	}
 }
 
 // Lookup returns the Flag structure of the named flag, returning nil if none exists.
-func (self *FlagParser) Lookup(name string) *Flag {
-	return self.flags.formal[name]
+func (self *FlagParserType) Lookup(name string) *Flag {
+	return self.formal[name]
 }
 
 // Set sets the value of the named flag.  It returns true if the set succeeded; false if
 // there is no such flag defined.
-func (self *FlagParser) Set(name, value string) bool {
-	f, ok := self.flags.formal[name]
+func (self *FlagParserType) Set(name, value string) bool {
+	f, ok := self.formal[name]
 	if !ok {
 		return false
 	}
@@ -247,12 +254,12 @@ func (self *FlagParser) Set(name, value string) bool {
 	if !ok {
 		return false
 	}
-	self.flags.actual[name] = f
+	self.actual[name] = f
 	return true
 }
 
 // PrintDefaults prints to standard error the default values of all defined flags.
-func (self *FlagParser) PrintDefaults() {
+func (self *FlagParserType) PrintDefaults() {
 	self.VisitAll(func(f *Flag) {
 		format := "  -%s=%s: %s\n"
 		if _, ok := f.Value.(*stringValue); ok {
@@ -263,180 +270,172 @@ func (self *FlagParser) PrintDefaults() {
 	})
 }
 
-// TODO: Adapt into a function pointer on the struct, use Usage
+
 // Usage prints to standard error a default usage message documenting all defined flags.
-// The function is a variable that may be changed to point to a custom function.
-var (self *FlagParser) Usage = func() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	PrintDefaults()
+// The Go standard library allows setting a custom usage. This has been left out.
+func (self *FlagParserType) Usage() {
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", self.args[0])
+	self.PrintDefaults()
 }
 
-func (self *FlagParser) Usage {
-	if
 
-var panicOnError = false
-
-func (self *FlagParser) fail() {
+func (self *FlagParserType) fail() {
 	self.Usage()
-	if self.panicOnError {
-		panic("flag parse error")
-	}
 	os.Exit(2)
 }
 
-func (self *FlagParser) NFlag() int { return len(self.flags.actual) }
+func (self *FlagParserType) NFlag() int { return len(self.actual) }
 
-// TODO: Adapt to one parsing
 // Arg returns the i'th command-line argument.  Arg(0) is the first remaining argument
 // after flags have been processed.
-func (self *FlagParser) Arg(i int) string {
-	i += self.flags.first_arg
-	if i < 0 || i >= len(os.Args) {
+func (self *FlagParserType) Arg(i int) string {
+	i += self.first_arg
+	if i < 0 || i >= len(self.args) {
 		return ""
 	}
-	return os.Args[i]
+	return self.args[i]
 }
 
 
 // NArg is the number of arguments remaining after flags have been processed.
-func (self *FlagParser) NArg() int {
-	return len(os.Args) - self.flags.first_arg
+func (self *FlagParserType) NArg() int {
+	return len(self.args) - self.first_arg
 }
 
 // Args returns the non-flag command-line arguments.
-func (self *FlagParser) Args() []string {
-	return os.Args[self.flags.first_arg:]
+func (self *FlagParserType) Args() []string {
+	return self.args[self.first_arg:]
 }
 
 // BoolVar defines a bool flag with specified name, default value, and usage string.
 // The argument p points to a bool variable in which to store the value of the flag.
-func (self *FlagParser) BoolVar(p *bool, name string, value bool, usage string) {
-	Var(newBoolValue(value, p), name, usage)
+func (self *FlagParserType) BoolVar(p *bool, name string, value bool, usage string) {
+	self.Var(newBoolValue(value, p), name, usage)
 }
 
 // Bool defines a bool flag with specified name, default value, and usage string.
 // The return value is the address of a bool variable that stores the value of the flag.
-func (self *FlagParser) Bool(name string, value bool, usage string) *bool {
+func (self *FlagParserType) Bool(name string, value bool, usage string) *bool {
 	p := new(bool)
-	BoolVar(p, name, value, usage)
+	self.BoolVar(p, name, value, usage)
 	return p
 }
 
 // IntVar defines an int flag with specified name, default value, and usage string.
 // The argument p points to an int variable in which to store the value of the flag.
-func (self *FlagParser) IntVar(p *int, name string, value int, usage string) {
-	Var(newIntValue(value, p), name, usage)
+func (self *FlagParserType) IntVar(p *int, name string, value int, usage string) {
+	self.Var(newIntValue(value, p), name, usage)
 }
 
 // Int defines an int flag with specified name, default value, and usage string.
 // The return value is the address of an int variable that stores the value of the flag.
-func (self *FlagParser) Int(name string, value int, usage string) *int {
+func (self *FlagParserType) Int(name string, value int, usage string) *int {
 	p := new(int)
-	IntVar(p, name, value, usage)
+	self.IntVar(p, name, value, usage)
 	return p
 }
 
 // Int64Var defines an int64 flag with specified name, default value, and usage string.
 // The argument p points to an int64 variable in which to store the value of the flag.
-func (self *FlagParser) Int64Var(p *int64, name string, value int64, usage string) {
-	Var(newInt64Value(value, p), name, usage)
+func (self *FlagParserType) Int64Var(p *int64, name string, value int64, usage string) {
+	self.Var(newInt64Value(value, p), name, usage)
 }
 
 // Int64 defines an int64 flag with specified name, default value, and usage string.
 // The return value is the address of an int64 variable that stores the value of the flag.
-func (self *FlagParser) Int64(name string, value int64, usage string) *int64 {
+func (self *FlagParserType) Int64(name string, value int64, usage string) *int64 {
 	p := new(int64)
-	Int64Var(p, name, value, usage)
+	self.Int64Var(p, name, value, usage)
 	return p
 }
 
 // UintVar defines a uint flag with specified name, default value, and usage string.
 // The argument p points to a uint variable in which to store the value of the flag.
-func (self *FlagParser) UintVar(p *uint, name string, value uint, usage string) {
-	Var(newUintValue(value, p), name, usage)
+func (self *FlagParserType) UintVar(p *uint, name string, value uint, usage string) {
+	self.Var(newUintValue(value, p), name, usage)
 }
 
 // Uint defines a uint flag with specified name, default value, and usage string.
 // The return value is the address of a uint variable that stores the value of the flag.
-func (self *FlagParser) Uint(name string, value uint, usage string) *uint {
+func (self *FlagParserType) Uint(name string, value uint, usage string) *uint {
 	p := new(uint)
-	UintVar(p, name, value, usage)
+	self.UintVar(p, name, value, usage)
 	return p
 }
 
 // Uint64Var defines a uint64 flag with specified name, default value, and usage string.
 // The argument p points to a uint64 variable in which to store the value of the flag.
-func (self *FlagParser) Uint64Var(p *uint64, name string, value uint64, usage string) {
-	Var(newUint64Value(value, p), name, usage)
+func (self *FlagParserType) Uint64Var(p *uint64, name string, value uint64, usage string) {
+	self.Var(newUint64Value(value, p), name, usage)
 }
 
 // Uint64 defines a uint64 flag with specified name, default value, and usage string.
 // The return value is the address of a uint64 variable that stores the value of the flag.
-func (self *FlagParser) Uint64(name string, value uint64, usage string) *uint64 {
+func (self *FlagParserType) Uint64(name string, value uint64, usage string) *uint64 {
 	p := new(uint64)
-	Uint64Var(p, name, value, usage)
+	self.Uint64Var(p, name, value, usage)
 	return p
 }
 
 // StringVar defines a string flag with specified name, default value, and usage string.
 // The argument p points to a string variable in which to store the value of the flag.
-func (self *FlagParser) StringVar(p *string, name, value string, usage string) {
-	Var(newStringValue(value, p), name, usage)
+func (self *FlagParserType) StringVar(p *string, name, value string, usage string) {
+	self.Var(newStringValue(value, p), name, usage)
 }
 
 // String defines a string flag with specified name, default value, and usage string.
 // The return value is the address of a string variable that stores the value of the flag.
-func (self *FlagParser) String(name, value string, usage string) *string {
+func (self *FlagParserType) String(name, value string, usage string) *string {
 	p := new(string)
-	StringVar(p, name, value, usage)
+	self.StringVar(p, name, value, usage)
 	return p
 }
 
 // FloatVar defines a float flag with specified name, default value, and usage string.
 // The argument p points to a float variable in which to store the value of the flag.
-func (self *FlagParser) FloatVar(p *float, name string, value float, usage string) {
-	Var(newFloatValue(value, p), name, usage)
+func (self *FlagParserType) FloatVar(p *float, name string, value float, usage string) {
+	self.Var(newFloatValue(value, p), name, usage)
 }
 
 // Float defines a float flag with specified name, default value, and usage string.
 // The return value is the address of a float variable that stores the value of the flag.
-func (self *FlagParser) Float(name string, value float, usage string) *float {
+func (self *FlagParserType) Float(name string, value float, usage string) *float {
 	p := new(float)
-	FloatVar(p, name, value, usage)
+	self.FloatVar(p, name, value, usage)
 	return p
 }
 
 // Float64Var defines a float64 flag with specified name, default value, and usage string.
 // The argument p points to a float64 variable in which to store the value of the flag.
-func (self *FlagParser) Float64Var(p *float64, name string, value float64, usage string) {
-	Var(newFloat64Value(value, p), name, usage)
+func (self *FlagParserType) Float64Var(p *float64, name string, value float64, usage string) {
+	self.Var(newFloat64Value(value, p), name, usage)
 }
 
 // Float64 defines a float64 flag with specified name, default value, and usage string.
 // The return value is the address of a float64 variable that stores the value of the flag.
-func (self *FlagParser) Float64(name string, value float64, usage string) *float64 {
+func (self *FlagParserType) Float64(name string, value float64, usage string) *float64 {
 	p := new(float64)
-	Float64Var(p, name, value, usage)
+	self.Float64Var(p, name, value, usage)
 	return p
 }
 
 // Var defines a user-typed flag with specified name, default value, and usage string.
 // The argument p points to a Value variable in which to store the value of the flag.
-func (self *FlagParser) Var(value Value, name string, usage string) {
+func (self *FlagParserType) Var(value Value, name string, usage string) {
 	// Remember the default value as a string; it won't change.
 	f := &Flag{name, usage, value, value.String()}
-	_, alreadythere := self.flags.formal[name]
+	_, alreadythere := self.formal[name]
 	if alreadythere {
 		fmt.Fprintln(os.Stderr, "flag redefined:", name)
 		panic("flag redefinition") // Happens only if flags are declared with identical names
 	}
-	self.flags.formal[name] = f
+	self.formal[name] = f
 }
 
 
-func (f *allFlags) parseOne(index int) (ok bool, next int) {
-	s := os.Args[index]
-	f.first_arg = index // until proven otherwise
+func (self *FlagParserType) parseOne(index int) (ok bool, next int) {
+	s := self.args[index]
+	self.first_arg = index // until proven otherwise
 	if len(s) == 0 {
 		return false, -1
 	}
@@ -456,7 +455,7 @@ func (f *allFlags) parseOne(index int) (ok bool, next int) {
 	name := s[num_minuses:]
 	if len(name) == 0 || name[0] == '-' || name[0] == '=' {
 		fmt.Fprintln(os.Stderr, "bad flag syntax:", s)
-		fail()
+		self.fail()
 	}
 
 	// it's a flag. does it have an argument?
@@ -470,82 +469,54 @@ func (f *allFlags) parseOne(index int) (ok bool, next int) {
 			break
 		}
 	}
-	m := flags.formal
+	m := self.formal
 	flag, alreadythere := m[name] // BUG
 	if !alreadythere {
 		fmt.Fprintf(os.Stderr, "flag provided but not defined: -%s\n", name)
-		fail()
+		self.fail()
 	}
 	if f, ok := flag.Value.(*boolValue); ok { // special case: doesn't need an arg
 		if has_value {
 			if !f.Set(value) {
 				fmt.Fprintf(os.Stderr, "invalid boolean value %t for flag: -%s\n", value, name)
-				fail()
+				self.fail()
 			}
 		} else {
 			f.Set("true")
 		}
 	} else {
 		// It must have a value, which might be the next argument.
-		if !has_value && index < len(os.Args)-1 {
+		if !has_value && index < len(self.args)-1 {
 			// value is the next arg
 			has_value = true
 			index++
-			value = os.Args[index]
+			value = self.args[index]
 		}
 		if !has_value {
 			fmt.Fprintf(os.Stderr, "flag needs an argument: -%s\n", name)
-			fail()
+			self.fail()
 		}
 		ok = flag.Value.Set(value)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "invalid value %s for flag: -%s\n", value, name)
-			fail()
+			self.fail()
 		}
 	}
-	flags.actual[name] = flag
+	self.actual[name] = flag
 	return true, index + 1
 }
 
 // Parse parses the command-line flags.  Must be called after all flags are defined
 // and before any are accessed by the program.
-func (self *FlagParser) Parse() {
-	for i := 1; i < len(os.Args); {
-		ok, next := self.flags.parseOne(i)
+func (self *FlagParserType) Parse() {
+	for i := 1; i < len(self.args); {
+		ok, next := self.parseOne(i)
 		if next > 0 {
-			self.flags.first_arg = next
+			self.first_arg = next
 			i = next
 		}
 		if !ok {
 			break
 		}
 	}
-}
-
-// ResetForTesting clears all flag state and sets the usage function as directed.
-// After calling ResetForTesting, parse errors in flag handling will panic rather
-// than exit the program.
-// For testing only!
-func (self *FlagParser) ResetForTesting(usage func()) {
-	self.flags = &allFlags{
-		make(map[string]*Flag),
-		make(map[string]*Flag),
-		1}
-	Usage = usage
-	panicOnError = true
-}
-
-// ParseForTesting parses the flag state using the provided arguments. It
-// should be called after 1) ResetForTesting and 2) setting up the new flags.
-// The return value reports whether the parse was error-free.
-// For testing only!
-func (self *FlagParser) ParseForTesting(args []string) (result bool) {
-	defer func() {
-		if recover() != nil {
-			result = false
-		}
-	}()
-	os.Args = args
-	self.Parse()
-	return true
 }
