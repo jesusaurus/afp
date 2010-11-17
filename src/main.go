@@ -3,28 +3,50 @@ package main;
 import (
 	"libav"
 	"unsafe"
+	"os"
+)
+
+const (
+	samplesPerSecond = 44100
+	samplesPerMillisecond = samplesPerSecond / 1000
+	delayTimeInMs = 150
+	channels = 2
+	bytesPerSample = 2
 )
 
 func main() {
 	var context libav.AVDecodeContext
+/*	var t0 int = 0*/
+	var currBuffer = 0
+	var buffer [2][]int16
+	var extraSamples int = samplesPerMillisecond * delayTimeInMs * channels
+
+	buffer[0] = make([]int16, extraSamples, extraSamples)
+	
 	libav.InitDecoding()
 	libav.PrepareDecoding("/tmp/test.mp3", &context)
+	
 	for l := libav.DecodePacket(context); l > 0; {
 		l = libav.DecodePacket(context)
-		sample := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:l/2]
+		numberOfSamples := l / bytesPerSample
+		decodedSamples := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:numberOfSamples]
 
-		for j,s := range sample {
-			if (j % 32 == 0) {
-				width := 236
-				half := int16(width/2) 
-				offset := int16(float(s) * float(width) / 65535.0)
-
-				for i := 0; i < int(half + offset); i++ {
-					print(" ")
-				}
-				println("#")
-			}
-		}
+/*		os.Stdout.Write((*(*[1 << 31 - 1]uint8)(unsafe.Pointer(context.Context.Outbuf)))[:(numberOfSamples*bytesPerSample)])*/
+		buffer[1 - currBuffer] = append(buffer[currBuffer], decodedSamples...)
+		currBuffer = 1 - currBuffer;
 	}
 	
+	for t0,_ := range buffer[currBuffer] {
+		if t0 > extraSamples {
+			buffer[1 - currBuffer][t0] = buffer[currBuffer][t0] + (buffer[currBuffer][t0 - extraSamples] / 2)
+		}
+	}
+	currBuffer = 1 - currBuffer;
+	
+/*	println(t0, len(buffer[currBuffer]))*/
+
+/*	for _,s := range buffer[currBuffer] {
+		os.Stdout.Write()
+	}
+*/	os.Stdout.Write(*(*[]uint8)(unsafe.Pointer(&buffer[currBuffer])));
 }
