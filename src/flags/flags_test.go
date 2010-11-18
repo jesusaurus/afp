@@ -142,6 +142,7 @@ func TestUserDefined(t *testing.T) {
 			t.Error("parse failed")
 		}
 	}()
+	parser.Parse()
 	if len(v) != 3 {
 		t.Fatal("expected 3 args; got ", len(v))
 	}
