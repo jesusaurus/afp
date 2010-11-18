@@ -2,7 +2,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-flags: main.go
-	$(GC) main.go
+TARG=flags
+GOFILES=flags.go
+
 
 include $(GOROOT)/src/Make.pkg
