@@ -1,6 +1,8 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+//
+// Modifications Copyright 2010 Aaron DeVore
 
 /*
 	This flag package is an object version of the flag package in Go's
@@ -12,10 +14,10 @@
 	1) Initialize a parser object
 	2) Define flags using parser's String(), Bool(), Int(), etc. Example:
 		import (
-			"fightclub/flag",
+			"fightclub/flags",
 			"os"
 			)
-		parser := FlagParser(os.Args)
+		parser := flags.FlagParser(os.Args)
 		var ip *int = parser.Int("flagname", 1234, "help message for flagname")
 	If you like, you can bind the flag to a variable using the Var() functions.
 		var flagvar int
@@ -221,6 +223,8 @@ type FlagParserType struct {
 func FlagParser(args []string) *FlagParserType {
 	parser := new(FlagParserType)
 	parser.args = args
+	parser.formal = make(map[string]*Flag)
+	parser.actual = make(map[string]*Flag)
 	return parser
 }
 
