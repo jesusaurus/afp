@@ -7,12 +7,16 @@ import (
 	"os"
 )
 
-var pipeline []Filter = make([]Filter, 0, 100)
-var CHAN_BUFF_LEN int = 16 //Move this elsewhere
-
+var (
+	pipeline []Filter = make([]Filter, 0, 100)
+	CHAN_BUFF_LEN int = 16 //Move this elsewhere
+	FilterErrors chan string = make(chan string)
+	err log.Logger //Should live/be initialized elsewhere
+	info log.Logger //Should live/be initialized elsewhere
+)
 //Assume: every filter spec has length of at least 1
 //Potential issue: With this scheme, every pipeline must have at least 2 filters
-func InitPipeline(pipelineSpec [][]string, verbose bool, err, info log.Logger) {
+func InitPipeline(pipelineSpec [][]string, verbose bool) {
 
 	var (
 		link           chan []byte       = make(chan []byte, CHAN_BUFF_LEN)
@@ -62,9 +66,11 @@ func InitPipeline(pipelineSpec [][]string, verbose bool, err, info log.Logger) {
 
 		link = nextLink
 		headerLink = nextHeaderLink
+
+		go fWrapper(newFilter, filterSpec[0]);
 	}
 
-	sink, err := constructFilter(filterSpec[0], filterSpec[1:],
+	sink, err := constructFilter(filterSpec[0], filterSpec[1:], //Fixme
 		&Context{
 			Source:       link,
 			HeaderSource: headerLink,
@@ -77,7 +83,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool, err, info log.Logger) {
 		fmt.Fprintln(os.Stderr, err.String())
 		exit(1)
 	} else if src.GetType() != PIPE_SINK {
-		fmt.Fprintf(os.Stderr, "Error: %s is not a valid source") //TODO: Better error message
+		fmt.Fprintf(os.Stderr, "Error: %s is not a valid sink") //TODO: Better error message
 		exit(1)
 	}
 }
@@ -88,7 +94,7 @@ func constructFilter(filter string, args []string, context *Context) (Filter, os
 	if !ok {
 		return nil, os.NewError(fmt.Sprintf("Error: %s: filter not found.", filterSpec[0]))
 	}
-
+	
 	newFilter := ctor()
 	if newFilter == nil {
 		return nil, os.NewError(fmt.Sprintf("Error: %s: Attempt to create filter failed.", filterSpec[0]))
@@ -102,8 +108,12 @@ func constructFilter(filter string, args []string, context *Context) (Filter, os
 	return newFilter, nil
 }
 
-func StartPipeline() {
-	for _, f := range pipeline {
-		f.Start()
-	}
+func fWrapper(f Filter, fname string) {
+	defer func() {
+		if x := recover(); x != nil {
+			
+		}
+	}()
+	
+	f.Start()
 }
