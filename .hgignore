@@ -3,8 +3,10 @@ syntax: glob
 *.a
 *.o
 *.6
+*.8
 *.swp
 *.so
 a.out*
+8.out
 *cgo*
 src/libavtest
