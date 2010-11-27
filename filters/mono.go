@@ -65,3 +65,18 @@ func mergeChannels(audio [][]float32, channels int) [][]float32 {
 	}
 	return audio
 }
+
+// merge Channels for audio[sample][channel #]
+// Uses a slicing optimization to cut down on allocations
+func mergeChannels(audio [][]float32, channels int) [][]float32 {
+	for i, samples := range audio {
+		for j, sample := range samples {
+			mval += sample / channels
+		}
+		// Assign to the first line item, assign a slice
+		// Trade off: memory for allocation time.
+		audio[i][0] = mval
+		audio[i] = samples[:1]
+	}
+	return audio
+}
