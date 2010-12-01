@@ -1,16 +1,21 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// Mono filter
+// Combine all channels into a single channel
+// Uses the average of all channels
+
 package mono
 
-import "afp"
+import "afp/types"
 
 type MonoFilter struct {
-	ctx *afp.Context
+	ctx *types.Context
 }
 
 func (self *MonoFilter) GetType() int {
-	return afp.PIPE_LINK
+	return types.PIPE_LINK
 }
 
-func (self *MonoFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *MonoFilter) Init(ctx *types.Context, args []string) os.Error {
 	self.ctx = ctx
 	parser := flags.FlagParser(args)
 	parser.Parse()
