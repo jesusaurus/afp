@@ -11,16 +11,42 @@ import (
 // #include <alsa/asoundlib.h>
 import "C"
 
-type AlsaFilter struct {
+
+/////
+// Alsa Source
+// Listens to a microphone
+type AlsaSource struct {
     ctx *afp.Context
     header StreamHeader
 }
 
-func (self *AlsaFilter) GetType() int {
+func (self *AlsaSource) GetType() int {
+    return afp.PIPE_SOURCE
+}
+
+func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
+    self.ctx = ctx
+    header <-ctx.HeaderSource
+    return nil
+}
+
+func (self *AlsaSource) Start() {
+    return
+}
+
+/////
+// Alsa Sink
+// Outputs to speakers via ALSA
+type AlsaSink struct {
+    ctx *afp.Context
+    header StreamHeader
+}
+
+func (self *AlsaSink) GetType() int {
     return afp.PIPE_SINK
 }
 
-func (self *AlsaFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
 
     header <-ctx.HeaderSource
@@ -28,7 +54,7 @@ func (self *AlsaFilter) Init(ctx *afp.Context, args []string) os.Error {
     return self.prepare()
 }
 
-func (self *AlsaFilter) Start() {
+func (self *AlsaSink) Start() {
     for buffer, ok := <-ctx.Source; ok {
         length := len(buffer)
         errno := C.snd_pcm_writen(playback, unsafe.Pointer(buffer), length)
@@ -40,8 +66,7 @@ func (self *AlsaFilter) Start() {
 }
 
 // Ugly bastardized C code follows
-
-func (self *AlsaFilter) prepare() {
+func (self *AlsaSink) prepare() {
 
     var playback *C.snd_pcm_t
     var params *C.snd_pcm_hw_params_t
