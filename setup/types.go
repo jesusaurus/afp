@@ -10,7 +10,6 @@ const (
 	PIPE_SOURCE = iota
 	PIPE_SINK
 	PIPE_LINK
-	ANY
 )
 
 type StreamHeader struct {
