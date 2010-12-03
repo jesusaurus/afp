@@ -5,16 +5,10 @@ package main
 import (
 	"fmt"
 	"os"
-	. "afp"
+	. "afp" //fixme
 )
 
-var (
-	pipeline []Filter = make([]Filter, 0, 100)
-	CHAN_BUFF_LEN int = 16 //Move this elsewhere
-	FilterErrors chan string = make(chan string)
-	err log.Logger //Should live/be initialized elsewhere
-	info log.Logger //Should live/be initialized elsewhere
-)
+
 //Assume: every filter spec has length of at least 1
 //Potential issue: With this scheme, every pipeline must have at least 2 filters
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
