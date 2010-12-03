@@ -1,10 +1,11 @@
-package afp
+package main
 
 //This file is still just a sketch, does not compile
 
 import (
 	"fmt"
 	"os"
+	. "afp"
 )
 
 var (
