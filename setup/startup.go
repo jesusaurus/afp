@@ -25,7 +25,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		nextHeaderLink chan StreamHeader
 	)
 
-	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:],
+	src, err := constructFilter(
 		&Context{
 			Sink:       link,
 			HeaderSink: headerLink,
@@ -70,7 +70,8 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		go fWrapper(newFilter, filterSpec[0]);
 	}
 
-	sink, err := constructFilter(filterSpec[0], filterSpec[1:], //Fixme
+	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
+		pipelineSpec[len(pipelineSpec) - 1][1:],
 		&Context{
 			Source:       link,
 			HeaderSource: headerLink,
@@ -111,7 +112,7 @@ func constructFilter(filter string, args []string, context *Context) (Filter, os
 func fWrapper(f Filter, fname string) {
 	defer func() {
 		if x := recover(); x != nil {
-			
+			shutdown(x,fname)
 		}
 	}()
 	
