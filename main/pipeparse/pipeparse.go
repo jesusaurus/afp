@@ -7,23 +7,24 @@ import (
 	"os"
 )
 
-type ParsePipelineResult struct {
-	StageArgs [][]string
-	Flags *FlagParserType
-}
+const INITIAL_STAGE_SIZE = 30
 
-func ParsePipeline(args []string) *ParsePipelineResult {
-	stageArgs = make([][]string, 30)
-	mainArgs = make([]string, 30)
-	int stagesStart
+
+func ParsePipeline(args []string) ([]string, [][]string) {
+	stageArgs = make([][]string, INITIAL_STAGE_SIZE)
+	mainArgs = make([]string, INITIAL_STAGE_SIZE)
+	stagesStart int
 	for i, arg := range args[1:] {
-		if arg.startswith("-") { // change to Go equivalent
+		if !strings.HasPrefix(arg, "-") {
+			stagesStart = i
+		}
 
 
 	result = make([][]string, 30)
 	for i, arg := range args[1:] {
 
-	append(StageArgs, )
+	append(stageArgs, )
+	return mainArgs, stageArgs
 }
 
 //If the pipeline is being pulled from a file, we'll need to split it
@@ -37,6 +38,6 @@ func getSpecFromFile(path string) []string {
 	//The file may have newlines or odd whitespace patterns
 	//Replace them by single spaces before we split
 	strSpec := regexp.MustCompile(`[ \t\n\r]+`).ReplaceAllString(string(bytes), " ")
- 	
+
 	return strings.Split(strSpec, " ", -1)
 }
