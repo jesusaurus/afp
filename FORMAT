@@ -1,0 +1,35 @@
+Each module will run in a coroutine or separate process, communicating with its 
+neighbors in a raw format specified below.
+
+bytes             Meaning
+  _____________
+4|             | Header Length
+ |             |
+ |             |
+ |_____________|
+1|_____________| Header Version Number
+1|_____________| Audio Channels
+1|_____________| Sample Size
+4|             | Sample Rate
+ |             |
+ |             |
+ |_____________|
+8|             | Content Length
+ |             |
+ |             |
+ |             |
+ |             |
+ |             |
+ |             |
+ |_____________|
+?|      .      | Additional header information (If any)
+        .       
+ |      .      |
+ |_____________|
+?|      .      | Content - Interleaved Linear PCM
+        .       
+ |      .      |
+ |_____________|
+
+For modules operating in the same address space, this format may be broken
+up and the header or individual channels sent separately.
