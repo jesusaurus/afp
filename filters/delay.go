@@ -1,3 +1,5 @@
+// Copyright (c) 2010 Go Fightclub Authors
+
 package delay
 
 import (
