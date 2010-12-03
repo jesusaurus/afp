@@ -33,9 +33,8 @@ func (self *AlsaFilter) Start() {
         length := len(buffer)
         errno := C.snd_pcm_writen(playback, unsafe.Pointer(buffer), length)
 
-        if errno < length { //not all the data was written
-            fmt.Printf("Could not write to audio device. Error %d", errno)
-            return
+        if errno < length {
+            return //not all the data was written
         }
     }
 }
