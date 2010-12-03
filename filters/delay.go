@@ -4,12 +4,12 @@ package delay
 
 import (
 	"libav"
-	"types"
+	"afp/types"
 	"flags"
 )
 
 type DelayFilter struct {
-	ctx *afp.Context
+	ctx *types.Context
 	samplesPerSecond int = 44100
 	samplesPerMillisecond int = samplesPerSecond / 1000
 	delayTimeInMs int = 150
@@ -18,7 +18,7 @@ type DelayFilter struct {
 }
 
 func (self *DelayFilter) GetType() int {
-	return afp.PIPE_LINK
+	return types.PIPE_LINK
 }
 
 func Usage(args []string) os.Error {
@@ -27,7 +27,7 @@ func Usage(args []string) os.Error {
 	return os.NewError(msg)
 
 
-func (self *DelayFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *DelayFilter) Init(ctx *types.Context, args []string) os.Error {
 	self.ctx = ctx
 	if len(vars) != 2 {
 		return Usage(args)
