@@ -1,11 +1,9 @@
 package main
 
-//This file is still just a sketch, does not compile
-
 import (
 	"fmt"
 	"os"
-	. "afp" //fixme
+	"afp"
 )
 
 
@@ -15,13 +13,13 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 
 	var (
 		link           chan []byte       = make(chan []byte, CHAN_BUFF_LEN)
-		headerLink     chan StreamHeader = make(chan StreamHeader, 1)
+		headerLink     chan afp.StreamHeader = make(chan afp.StreamHeader, 1)
 		nextLink       chan []byte
-		nextHeaderLink chan StreamHeader
+		nextHeaderLink chan afp.StreamHeader
 	)
 
 	src, err := constructFilter(
-		&Context{
+		&afp.Context{
 			Sink:       link,
 			HeaderSink: headerLink,
 			Verbose:    verbose,
@@ -32,17 +30,17 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
 		exit(1)
-	} else if src.GetType() != PIPE_SOURCE {
+	} else if src.GetType() != afp.PIPE_SOURCE {
 		fmt.Fprintf(os.Stderr, "Error: %s is not a valid source") //TODO: Better error message
 		exit(1)
 	}
 
 	for _, filterSpec := range pipelineSpec[1 : length(pipelineSpec)-1] {
 		nextLink = make(chan []byte, CHAN_BUF_LEN)
-		nextHeaderLink = make(chan StreamHeader, 1)
+		nextHeaderLink = make(chan afp.StreamHeader, 1)
 
 		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:],
-			&Context{
+			&afp.Context{
 				Source:       link,
 				HeaderSource: headerLink,
 				Sink:         nextLink,
@@ -67,7 +65,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
 		pipelineSpec[len(pipelineSpec) - 1][1:],
-		&Context{
+		&afp.Context{
 			Source:       link,
 			HeaderSource: headerLink,
 			Verbose:      verbose,
@@ -78,13 +76,13 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
 		exit(1)
-	} else if src.GetType() != PIPE_SINK {
+	} else if src.GetType() != afp.PIPE_SINK {
 		fmt.Fprintf(os.Stderr, "Error: %s is not a valid sink") //TODO: Better error message
 		exit(1)
 	}
 }
 
-func constructFilter(filter string, args []string, context *Context) (Filter, os.Error) {
+func constructFilter(filter string, args []string, context *afp.Context) (afp.Filter, os.Error) {
 	//Is the filter in the list of known filters?
 	ctor, ok := filters[filterSpec[0]]
 	if !ok {
@@ -104,9 +102,10 @@ func constructFilter(filter string, args []string, context *Context) (Filter, os
 	return newFilter, nil
 }
 
-func fWrapper(f Filter, fname string) {
+func fWrapper(f afp.Filter, fname string) {
 	defer func() {
 		if x := recover(); x != nil {
+			err.
 			shutdown(x,fname)
 		}
 	}()
