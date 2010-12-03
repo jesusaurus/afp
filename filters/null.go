@@ -1,3 +1,9 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// Null filter
+// As a source: Close without passing any data through the pipeline
+// As a link: Pass data straight through without processing
+// As a sink: Discard all data
+
 package null
 
 import "afp"

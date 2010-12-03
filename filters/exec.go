@@ -1,3 +1,5 @@
+// Copyright (c) 2010 Go Fightclub Authors
+
 package fexec
 
 import (
@@ -46,7 +48,7 @@ func (self *ExecFilter) Start() {
 
 	go self.encoder()
 	go self.decoder()
-	
+
 	if self.Verbose {
 		go self.errors()
 	}
@@ -54,7 +56,7 @@ func (self *ExecFilter) Start() {
 
 func (self *ExecFilter) encoder() {
 	defer self.filter.Close()
-	
+
 	binary.Write(self.filter.Stdin, ENDIAN, self.header.HeaderLength)
 	binary.Write(self.filter.Stdin, ENDIAN, self.header.Version)
 	binary.Write(self.filter.Stdin, ENDIAN, self.header.Channels)
@@ -74,7 +76,7 @@ func (self *ExecFilter) encoder() {
 
 func (self *ExecFilter) decoder() {
 	OutHeader := &types.StreamHeader{}
-	
+
 	err := binary.Read(self.filter.Stdin, ENDIAN, &OutHeader.HeaderLength)
 	err = binary.Read(self.filter.Stdin, ENDIAN, &OutHeader.Version)
 	err = binary.Read(self.filter.Stdin, ENDIAN, &OutHeader.Channels)
@@ -88,13 +90,13 @@ func (self *ExecFilter) decoder() {
 
 	binary.Read(self.filter.Stdin, ENDIAN, other)
 	OutHeader.Other = other[:]
-	
+
 	frame [][]float32 := make([][]float32, FrameSize)
 
 	for /*???*/ {
 		var rawFrame [Channels * FrameSize]float32
 		binary.Read(self.filter.Stdin, ENDIAN, &rawFrame)
-	
+
 	}
 }
 

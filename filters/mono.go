@@ -1,16 +1,21 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// Mono filter
+// Combine all channels into a single channel
+// Uses the average of all channels
+
 package mono
 
-import "afp"
+import "afp/types"
 
 type MonoFilter struct {
-	ctx *afp.Context
+	ctx *types.Context
 }
 
 func (self *MonoFilter) GetType() int {
-	return afp.PIPE_LINK
+	return types.PIPE_LINK
 }
 
-func (self *MonoFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *MonoFilter) Init(ctx *types.Context, args []string) os.Error {
 	self.ctx = ctx
 	parser := flags.FlagParser(args)
 	parser.Parse()
@@ -43,45 +48,64 @@ func (self *MonoFilter) Start() {
 	}
 }
 
+// Merge channels, return new frame. May modify the frame array.
+func mergeChannels(frame [][]float32, channels int) [][]float32
+
+
 // mergeChannels for frame[channel #][sample]
 // This _might_ be significantly faster than the other versions
+// Optimization: Merge all channels into channel one instead of
+// allocating a new array.
 func mergeChannels(frame [][]float32, channels int) [][]float32 {
-	for slice, _ := range frame[0] {
-		for channel, _ := range frame {
-			mval += frame[channel][slice] / channels
+	var monoValue float32
+	// Use sample indexes from the first channel
+	for sample, _ := range frame[0] {
+		monoValue = 0.0
+		for _, channel := range frame {
+			monoValue += channel[sample] / channels
 		}
-		// Reuse the first channel
-		frame[0][slice] := mval
+		// Assign to first channel
+		frame[0][sample] := monoValue
 	}
-	// Return a slice with just the first channel
-	return frame[:1]
+
+	newFrame = make([][]float32, 1);
+	newFrame[0] = frame[0]
+	return newFrame
 }
 
+
 // mergeChannels for frame[sample][channel #]
+// Optimization:
 func mergeChannels(frame [][]float32, channels int) [][]float32 {
-	for i, samples := range frame {
-		for j, sample := range samples {
-			mval += sample / channels
+	var monoValue float32
+	for sample, sampleValues := range frame {
+		monoValue = 0.0
+		for _, channelValue := range sampleValues {
+			monoValue += channelValue / channels
 		}
-		// Allocate a new length one array for each one: time issue?
-		sampleLine = make([]float32, 1)
-		sampleLine[0] = mval
-		frame[i] = mval
+
+		// Allocate a new length one array for each sample: performance
+		// issue?
+		newSample = make([]float32, 1)
+		newSample[0] = monoValue
+		frame[sample] = newSample
 	}
 	return frame
 }
 
+
 // merge Channels for frame[sample][channel #]
-// Uses a slicing optimization to cut down on allocations
+// Uses a slicing optimization to cut down on allocations at the
+// expense of leaving many open spaces and some cleverness
 func mergeChannels(frame [][]float32, channels int) [][]float32 {
-	for i, samples := range frame {
-		for j, sample := range samples {
-			mval += sample / channels
+	var monoValue float32
+	for sample, sampleValues := range frame {
+		for _, channelValue := range sampleValues {
+			monoValue += sample / channels
 		}
-		// Assign to the first line item, assign a slice
-		// Possible trade off: memory for allocation time.
-		frame[i][0] = mval
-		frame[i] = samples[:1]
+		// Possible trade off: memory for allocation time, *cleverness*
+		frame[sample][0] = monoValue
+		frame[sample] = frame[sample][:1] // assign 1 length slice for mono channel
 	}
 	return frame
 }
