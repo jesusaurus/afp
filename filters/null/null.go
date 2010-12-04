@@ -10,13 +10,18 @@ import (
 	"afp"
 	"os"
 )
-//Dummy parent struct, only defines Init
+//Dummy parent struct, only defines Init/Stop
 type nullFilter struct {
 	ctx *afp.Context
 }
 
 func (self *nullFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
+	return nil
+}
+
+func (self *nullFilter) Stop() os.Error {
+	close(self.ctx.Sink)
 	return nil
 }
 
