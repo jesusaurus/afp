@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"afp"
+	"sync"
 )
 
 
@@ -18,7 +19,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		nextHeaderLink chan afp.StreamHeader
 	)
 
-	src, err := constructFilter(
+	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:],
 		&afp.Context{
 			Sink:       link,
 			HeaderSink: headerLink,
@@ -34,6 +35,8 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		fmt.Fprintf(os.Stderr, "Error: %s is not a valid source") //TODO: Better error message
 		exit(1)
 	}
+
+	pipeline = append(pipeline, &FilterWrapper{src, pipelineSpec[0][0], make(chan int, 1)})
 
 	for _, filterSpec := range pipelineSpec[1 : length(pipelineSpec)-1] {
 		nextLink = make(chan []byte, CHAN_BUF_LEN)
@@ -55,12 +58,11 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 			exit(1)
 		}
 
-		pipeline = append(pipeline, newFilter)
+		pipeline = append(pipeline, &FilterWrapper{newFilter, filterSpec[0], make(chan int, 1)})
 
 		link = nextLink
 		headerLink = nextHeaderLink
 
-		go fWrapper(newFilter, filterSpec[0]);
 	}
 
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
@@ -76,9 +78,18 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
 		exit(1)
-	} else if src.GetType() != afp.PIPE_SINK {
+	} else if sink.GetType() != afp.PIPE_SINK {
 		fmt.Fprintf(os.Stderr, "Error: %s is not a valid sink") //TODO: Better error message
 		exit(1)
+	}
+
+	pipeline = append(pipeline, 
+		&FilterWrapper{sink, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
+}
+
+func StartPipeline() {
+	for _,f := range Pipeline {
+		go fWrapper(newFilter);
 	}
 }
 
@@ -102,13 +113,49 @@ func constructFilter(filter string, args []string, context *afp.Context) (afp.Fi
 	return newFilter, nil
 }
 
-func fWrapper(f afp.Filter, fname string) {
+var sdLock *sync.Mutex = &sync.Mutex{}
+
+func shutdown() {
+
+	//If multiple filters panic, their shutdown calls will be parallel
+	//Be sure that only one goes through
+	sdLock.Lock()
+	for _, f := range Pipeline {
+		if err := f.filter.Stop(); err != nil {
+			errors.Printf("Error in '%s': %s", f.name, err.String())
+		}
+	}
+}
+
+func RunFilter(f FilterWrapper) {
 	defer func() {
 		if x := recover(); x != nil {
-			err.
-			shutdown(x,fname)
+			errors.Printf("[***] Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
+
+			var btSync sync.Mutex
+			btSync.Lock()
+			defer btSync.Unlock()
+			
+			i := 1
+			
+			for {
+				
+				pc, file, line, ok := runtime.Caller(i)
+				
+				if !ok {
+					break
+				}
+				
+				f := runtime.FuncForPC(pc)
+				errors.Printf("[***]---> %d(%s): %s:%d\n", i-1, f.Name(), file, line)
+				i++
+			}
+			
+			shutdown()
+			os.Exit(1)
 		}
 	}()
 	
-	f.Start()
+	f.filter.Start()
+	f.finished <- 1
 }
