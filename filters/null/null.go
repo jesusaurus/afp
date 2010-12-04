@@ -6,8 +6,10 @@
 
 package null
 
-import "afp"
-
+import (
+	"afp"
+	"os"
+)
 //Dummy parent struct, only defines Init
 type nullFilter struct {
 	ctx *afp.Context
@@ -27,16 +29,16 @@ func NewNullSource() afp.Filter {
 }
 
 func (self *NullSource) GetType() int {
-	return afp.SOURCE
+	return afp.PIPE_SOURCE
 }
 
 func (self *NullSource) Start() {
-	self.ctx.HeaderSink <- StreamHeader{
+	self.ctx.HeaderSink <- afp.StreamHeader{
 	Version : 1,
 	Channels : 1,
 	SampleSize : 0,
 	SampleRate : 0,
-	ContentLength : 0
+	ContentLength : 0,
 	}
 	close(self.ctx.Sink)
 }
@@ -50,12 +52,13 @@ func NewNullSink() afp.Filter {
 }
 
 func (self *NullSink) GetType() int {
-	return afp.SINK
+	return afp.PIPE_SINK
 }
 
 func (self *NullSink) Start() {
-	_ <- self.ctx.HeaderSource
-	for _ := range ctx.Source {
+	<-self.ctx.HeaderSource
+	for _ = range self.ctx.Source {
+		//Do nothing
 	}
 }
 
@@ -68,12 +71,12 @@ func NewNullLink() afp.Filter {
 }
 
 func (self *NullLink) GetType() int {
-	return afp.LINK
+	return afp.PIPE_LINK
 }
 
 func (self *NullLink) Start() {
-	ctx.HeaderSink <- <-ctx.HeaderSource
-	for audio := range ctx.Source {
-		ctx.Sink <- audio
+	self.ctx.HeaderSink <- <-self.ctx.HeaderSource
+	for audio := range self.ctx.Source {
+		self.ctx.Sink <- audio
 	}
 }
