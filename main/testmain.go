@@ -2,28 +2,32 @@ package main
 
 import (
 	"afp"
-	"os/signal"
+//	"os/signal"
+	"log"
+	"os"
 	)
 
-type FilterWrapper {
+type FilterWrapper struct {
 	filter afp.Filter
 	name string
 	finished chan int
 }
 
-var pipespec [][]string = [][]string{{"source"},{"sink"}}
+var pipespec [][]string = [][]string{{"nullsource"},{"nulllink"},{"nullsink"}}
+
+const CHAN_BUF_LEN = 16
 
 var (
-	Pipeline []*FilterWrapper = make(*FilterWrapper, 0, 100)
+	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
 	
-	errors log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
-	info log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
+	errors *log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
+	info *log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
 	verbose bool = false
 	)
 
 
 func main() {
-	InitPipeline(pipespec)
+	InitPipeline(pipespec, verbose)
 	StartPipeline()
 
 	for _, filter := range Pipeline {
