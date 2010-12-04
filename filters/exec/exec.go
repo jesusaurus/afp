@@ -3,7 +3,7 @@
 package fexec
 
 import (
-	"afp/types"
+	"afp"
 	"os"
 	"exec"
 	"encoding/binary"
@@ -11,21 +11,13 @@ import (
 
 var ENDIAN binary.ByteOrder = binary.LittleEndian
 
-type ExecFilter struct {
+type execFilter struct {
 	context *types.Context
 	filter *exec.Cmd
 	header *types.StreamHeader
 }
 
-func NewFilter() types.Filter {
-	return &ExecFilter{}
-}
-
-func (self *ExecFilter) GetType() int {
-	return types.ANY
-}
-
-func (self *ExecFilter) Init(ctx *types.Context, args []string) os.Error {
+func (self *execFilter) Init(ctx *types.Context, args []string) os.Error {
 	if len(args) == 0 {
 		return os.NewError("No external filter specified")
 	}
@@ -43,18 +35,7 @@ func (self *ExecFilter) Init(ctx *types.Context, args []string) os.Error {
 	self.context = ctx
 }
 
-func (self *ExecFilter) Start() {
-	self.header = <-self.context.HeaderSource
-
-	go self.encoder()
-	go self.decoder()
-
-	if self.Verbose {
-		go self.errors()
-	}
-}
-
-func (self *ExecFilter) encoder() {
+func (self *execFilter) encoder() {
 	defer self.filter.Close()
 
 	binary.Write(self.filter.Stdin, ENDIAN, self.header.HeaderLength)
@@ -74,7 +55,7 @@ func (self *ExecFilter) encoder() {
 	}
 }
 
-func (self *ExecFilter) decoder() {
+func (self *execFilter) decoder() {
 	OutHeader := &types.StreamHeader{}
 
 	err := binary.Read(self.filter.Stdin, ENDIAN, &OutHeader.HeaderLength)
