@@ -9,7 +9,7 @@ syntax: glob
 a.out*
 8.out
 *cgo*
-research/src/libavtest
+lib/libav/libavtest
 research/dec
 research/piping/open
 research/piping/write
