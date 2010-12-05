@@ -5,6 +5,10 @@ import (
 	"os"
 )
 
+type ExecSink struct {
+	execFilter
+}
+
 func NewExecSource() afp.Filter {
 	return &ExecSource{execFilter{}}
 }
