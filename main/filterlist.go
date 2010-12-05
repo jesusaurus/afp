@@ -10,7 +10,7 @@ import (
 //	"./filters/fexec"
 //	"./filters/ospipe"
 //	"./filters/demo"
-	"../filters/null"
+	"afp/filters/null"
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
