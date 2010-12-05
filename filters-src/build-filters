@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+export PROJ_ROOT=`pwd`/..
+
+for F in `find -maxdepth 1 -mindepth 1 -type d`; do
+	echo "-- Building $F"
+	cd $F
+	make
+	make install
+	cd ..
+done
+
+export PROJ_ROOT=
