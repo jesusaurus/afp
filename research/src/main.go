@@ -7,34 +7,84 @@ package main;
 import (
 	"libav"
 	"unsafe"
+	"os"
+	"flag"
+	"fmt"
+	"encoding/binary" 
+)
+
+const (
+	samplesPerSecond = 44100
+	samplesPerMillisecond = samplesPerSecond / 1000
+	delayTimeInMs = 605
+	channels = 2
+	bytesPerSample = 2
 )
 
 func main() {
 	var context libav.AVDecodeContext
+	var currBuffer = 0
+	var buffer [2][]int16
+	var extraSamples int = samplesPerMillisecond * delayTimeInMs * channels
+	var infile string
+
+	buffer[0] = make([]int16, extraSamples, extraSamples)
+	
 	libav.InitDecoding()
-	libav.PrepareDecoding("/tmp/test.mp3", &context)
-	for l := libav.DecodePacket(context); l > 0; {
-/*		println("Packet decode: ", l, " bytes")*/
-		l = libav.DecodePacket(context)
-		sample := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:l/2]
-
-/*		for i := 0; i < l/2; i++ {
-			print(sample[i], " ")
-		}
-*/		for j,s := range sample {
-			if (j % 2 == 0) {
-				widt := 136
-				half := int16(width/2)
-				offset := int16(float(s) * float(width) / 65535.0)
-
-				for i := 0; i < int(half + offset); i++ {
-					print(" ")
-				}
-				println("#")
-			}
-		}
-/*		println("Decoded ", l, " bytes, oh joy!")
-		println("Context shows a packet at: ", []int16(reflect.MakeSlice(unsafe.Pointer(context.Context.Outbuf))))*/
+	
+	flag.Parse() // Scans the arg list and sets up flags
+	if flag.NArg() > 0 {
+	    infile = flag.Arg(0)
+	} else {
+		panic("Dumb!")
 	}
 
+	libav.PrepareDecoding(infile, &context)
+	
+	var (
+		frame = 0
+		l = 1
+		length = 0
+	)
+	
+	for l > 0 {
+		l = libav.DecodePacket(context)
+		
+		if l > 0 {
+			numberOfSamples := l / bytesPerSample
+			fmt.Fprintf(os.Stderr, "Frame: %d Length: %d Number of samples: %d\n", frame, l, numberOfSamples)
+			frame += 1
+			length += numberOfSamples
+			decodedSamples := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:numberOfSamples]
+
+/*			os.Stdout.Write((*(*[1 << 31 - 1]uint8)(unsafe.Pointer(context.Context.Outbuf)))[:(numberOfSamples*bytesPerSample)])*/
+			buffer[1 - currBuffer] = append(buffer[currBuffer], decodedSamples...)
+			currBuffer = 1 - currBuffer;
+		} else {
+			fmt.Fprintf(os.Stderr, "Frame: %d Length: %d\n", frame, l)
+		}
+	}
+	
+	buffer[1 - currBuffer] = make([]int16, len(buffer[currBuffer]) + extraSamples, len(buffer[currBuffer]) + extraSamples)
+	for t0,_ := range buffer[1 - currBuffer] {
+		if t0 > extraSamples {
+			if t0 < len(buffer[currBuffer]) {
+				buffer[1 - currBuffer][t0] = int16(0.8 * (float32(buffer[currBuffer][t0]) + (float32(buffer[currBuffer][t0 - extraSamples]) * 0.4)))
+			} else {
+				buffer[1 - currBuffer][t0] = int16(float32(buffer[currBuffer][t0 - extraSamples]) * 0.4)
+			}
+		}
+	}
+
+	currBuffer = 1 - currBuffer;
+
+/*	fmt.Fprintf(os.Stderr, "Len: %d Buffer 0: %d Buffer 1: %d\n", length, len(buffer[0]), len(buffer [1]))*/
+
+/*	bufferBytes := (*(*[1 << 31 - 1]uint8)(unsafe.Pointer(&buffer[currBuffer])))[:(len(buffer[currBuffer]) * 2)]
+	bytes, err := os.Stdout.Write(bufferBytes) */
+/*	bufferBytes := (*(*[]uint8)(unsafe.Pointer(&buffer[currBuffer])))[:(2*len(buffer[currBuffer]))]*/
+	err := binary.Write(os.Stdout, binary.LittleEndian, buffer[currBuffer]) 
+	if (err != nil) {
+		fmt.Fprintf(os.Stderr, "Err: %s\n", err)
+	}
 }

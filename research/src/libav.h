@@ -13,12 +13,51 @@
 #include <libavcodec/avcodec.h>
 
 typedef struct {
+	int32_t Channels;
+	int32_t Sample_size;
+	int32_t Sample_rate;
+	int64_t Content_length;
+	int32_t Frame_size; 
+} AVStreamInfo;
+
+typedef struct {
 	AVCodec *Codec;
 	AVFormatContext *Fctx;
 	AVCodecContext *Cctx;
 	int16_t *Outbuf;
-	long Buf_size, Buf_len;
+	int32_t Buf_size, Buf_len;
+	int8_t first_frame_used;
+	AVStreamInfo Info;
 	AVPacket Packet;
 } AVDecodeContext;
+
+/**
+ * modified from libavcodec/mpegaudio.h
+ *
+ * fast header check for resync
+ */
+static inline int ff_mpa_check_header(uint32_t header){
+    /* header */
+    if ((header & 0xffe00000) != 0xffe00000)
+        return -1;
+    /* layer check */
+    if ((header & (3<<17)) == 0)
+        return -1;
+    /* bit rate */
+    if ((header & (0xf<<12)) == 0xf<<12)
+        return -1;
+    /* frequency */
+    if ((header & (3<<10)) == 3<<10)
+        return -1;
+    return 0;
+}
+
+#ifndef AV_RB32
+#   define AV_RB32(x)                           \
+    ((((const uint8_t*)(x))[0] << 24) |         \
+     (((const uint8_t*)(x))[1] << 16) |         \
+     (((const uint8_t*)(x))[2] <<  8) |         \
+      ((const uint8_t*)(x))[3])
+#endif
 
 #endif
