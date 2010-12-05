@@ -76,13 +76,10 @@ func (self *AlsaSource) Start() {
 
         // snd_pcm_readi gives us a one dimensional array of interleaved data
         // but what we want is a two dimensional array of samples
-        for i := 0; i < length; i += int(self.header.Channels) {
-            aSample := make([]float32, self.header.Channels)
-            for j := 0; j < int(self.header.Channels); j++ {
-                aSample[j] = cbuf[i+j]
-            }
-            k := i / int(self.header.Channels)
-            buff[k] = aSample
+        chans := int(header.Channels)
+		for slice, i := 0, 0; i < length; slice, i = slice + 1, i + chans {
+			buff[slice] = make([]float32, chans)
+			buff[slice] = cbuff[i : i + chans]
         }
 
         //send it on down the line

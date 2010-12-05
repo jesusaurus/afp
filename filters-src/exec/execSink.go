@@ -2,31 +2,27 @@ package fexec
 
 import (
 	"afp"
-	"os"
 )
 
 type ExecSink struct {
 	execFilter
 }
 
-func NewExecSource() afp.Filter {
+func NewExecSink() afp.Filter {
 	return &ExecSource{execFilter{}}
 }
 
-func (self *ExecSource) GetType() int {
-	return afp.PIPE_SOURCE
+func (self *ExecSink) GetType() int {
+	return afp.PIPE_SINK
 }
 
-func (self *ExecSource) Start() {
+func (self *ExecSink) Start() {
 
-	go self.decoder()
+	go self.encoder()
 
-	if self.Verbose {
+	if self.context.Verbose {
 		go self.errors()
 	}
-}
-
-func Stop() os.Error {
-
-	return nil
+	
+	self.wait()
 }

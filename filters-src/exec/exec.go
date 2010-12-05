@@ -11,6 +11,7 @@ import (
 	"exec"
 	"encoding/binary"
 	"syscall"
+	"bufio"
 )
 
 type execFilter struct {
@@ -104,13 +105,16 @@ func (self *execFilter) decoder() {
 	self.context.HeaderSink <- OutHeader
 
 	frame := make([][]float32, OutHeader.FrameSize)
-
+	
+	chans := int32(OutHeader.Channels)
+	
 	for {
-		rawFrame := make([]float32, int32(OutHeader.Channels) * OutHeader.FrameSize)
+		rawFrame := make([]float32, chans * OutHeader.FrameSize)
 		self.read(rawFrame)
-		for i, slice := 0, 0; i < OutHeader.FrameSize / int32(OutHeader.Channels); slice++ {
-			frame[slice] = rawFrame[i:i + OutHeader.Channels]
-			i +=  OutHeader.Channels
+
+		for i, slice := int32(0), 0; i < OutHeader.FrameSize / chans; slice++ {
+			frame[slice] = rawFrame[i:i + chans]
+			i += chans
 		}
 	}
 }
@@ -118,8 +122,8 @@ func (self *execFilter) decoder() {
 func (self *execFilter) errors() {
 	errs := bufio.NewReader(self.filter.Stderr)
 
-	for str, e := errs.ReadString('\n'); err == nil; str, e = errs.ReadString('\n') {
-		self.context.info.Print(str)
+	for str, _ := errs.ReadString('\n'); errs == nil; str, _ = errs.ReadString('\n') {
+		self.context.Info.Print(str)
 	}
 }
 

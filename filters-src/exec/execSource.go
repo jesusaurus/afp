@@ -21,7 +21,7 @@ func (self *ExecSource) Start() {
 
 	go self.decoder()
 
-	if self.Verbose {
+	if self.context.Verbose {
 		go self.errors()
 	}
 
