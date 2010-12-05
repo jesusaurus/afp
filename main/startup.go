@@ -30,14 +30,16 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		ctx *afp.Context
 	)
 
-	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:],
-		&afp.Context{
-			Sink:       link,
-			HeaderSink: headerLink,
-			Verbose:    verbose,
-			Err:        errors,
-			Info:       info,
-		})
+	ctx = &afp.Context{
+	Sink:       link,
+	HeaderSink: headerLink,
+	Verbose:    verbose,
+	Err:        errors,
+	Info:       info,
+	}
+
+	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:], ctx)
+
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
@@ -47,44 +49,48 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		os.Exit(1)
 	}
 
-	Pipeline = append(Pipeline, &FilterWrapper{src, pipelineSpec[0][0], make(chan int, 1)})
+	Pipeline = append(Pipeline, &FilterWrapper{src, ctx, pipelineSpec[0][0], make(chan int, 1)})
 
 	for _, filterSpec := range pipelineSpec[1 : len(pipelineSpec)-1] {
 		nextLink = make(chan [][]float32, CHAN_BUF_LEN)
 		nextHeaderLink = make(chan afp.StreamHeader, 1)
 
-		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:],
-			&afp.Context{
-				Source:       link,
-				HeaderSource: headerLink,
-				Sink:         nextLink,
-				HeaderSink:   nextHeaderLink,
-				Verbose:      verbose,
-				Err:          errors,
-				Info:         info,
-			})
+		ctx = &afp.Context{
+		Source:       link,
+		HeaderSource: headerLink,
+		Sink:         nextLink,
+		HeaderSink:   nextHeaderLink,
+		Verbose:      verbose,
+		Err:          errors,
+		Info:         info,
+		}
+
+		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:], ctx)
+
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.String())
 			os.Exit(1)
 		}
 
-		Pipeline = append(Pipeline, &FilterWrapper{newFilter, filterSpec[0], make(chan int, 1)})
+		Pipeline = append(Pipeline, &FilterWrapper{newFilter, ctx, filterSpec[0], make(chan int, 1)})
 
 		link = nextLink
 		headerLink = nextHeaderLink
 
 	}
 
+	ctx = &afp.Context{
+	Source:       link,
+	HeaderSource: headerLink,
+	Verbose:      verbose,
+	Err:          errors,
+	Info:         info,
+	}
+
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
-		pipelineSpec[len(pipelineSpec) - 1][1:],
-		&afp.Context{
-			Source:       link,
-			HeaderSource: headerLink,
-			Verbose:      verbose,
-			Err:          errors,
-			Info:         info,
-		})
+		pipelineSpec[len(pipelineSpec) - 1][1:], ctx)
+		
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
@@ -95,7 +101,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	}
 
 	Pipeline = append(Pipeline,
-		&FilterWrapper{sink, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
+		&FilterWrapper{sink, ctx, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
 }
 
 func StartPipeline() {
@@ -167,6 +173,8 @@ func RunFilter(f *FilterWrapper) {
 	}()
 
 	f.filter.Start()
-	f.
+	if !closed(f.ctx.Sink) {
+		close(f.ctx.Sink)
+	}
 	f.finished <- 1
 }
