@@ -1,3 +1,7 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+
 package main
 
 import (
@@ -84,7 +88,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		os.Exit(1)
 	}
 
-	Pipeline = append(Pipeline, 
+	Pipeline = append(Pipeline,
 		&FilterWrapper{sink, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
 }
 
@@ -100,7 +104,7 @@ func constructFilter(name string, args []string, context *afp.Context) (afp.Filt
 	if !ok {
 		return nil, os.NewError(fmt.Sprintf("Error: %s: filter not found.", name))
 	}
-	
+
 	newFilter := ctor()
 	if newFilter == nil {
 		return nil, os.NewError(fmt.Sprintf("Error: %s: Attempt to create filter failed.", name))
@@ -136,27 +140,27 @@ func RunFilter(f *FilterWrapper) {
 			var btSync sync.Mutex
 			btSync.Lock()
 			defer btSync.Unlock()
-			
+
 			i := 1
-			
+
 			for {
-				
+
 				pc, file, line, ok := runtime.Caller(i)
-				
+
 				if !ok {
 					break
 				}
-				
+
 				f := runtime.FuncForPC(pc)
 				errors.Printf("[***]---> %d(%s): %s:%d\n", i-1, f.Name(), file, line)
 				i++
 			}
-			
+
 			shutdown()
 			os.Exit(1)
 		}
 	}()
-	
+
 	f.filter.Start()
 	f.finished <- 1
 }
