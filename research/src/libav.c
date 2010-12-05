@@ -11,6 +11,8 @@
 #include "libav.h"
 #include <string.h>
 
+int is_id3_tag(AVDecodeContext *context);
+
 /**
  * initialize all of the fun libavformat & libavdecode stuff
  *
@@ -40,12 +42,16 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 	/* initialize the AVPacket */
     av_init_packet(&context->Packet);
     
-	/* find the mp3 audio decoder */
-    context->Codec = avcodec_find_decoder(CODEC_ID_MP3);
+	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
+	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
+	fprintf(stderr, "Codec ID: %x", (int)guessed_codec);
+	/* find the audio decoder */
+    context->Codec = avcodec_find_decoder(guessed_codec);
     if (!context->Codec) {
         fprintf(stderr, "codec not found\n");
-		return -1;
+	return -1;
     }
+	
 
 	/* set up the codec context */
     context->Cctx = avcodec_alloc_context();
@@ -95,13 +101,14 @@ int decode_packet(AVDecodeContext *context) {
 	}
 	
 	/* check for id3 tag */
-	if (!((context->Packet.data[0] == 'T') && (context->Packet.data[1] == 'A') && (context->Packet.data[2] == 'G'))) {
+	if (!is_id3_tag(context)) {
 		/* we'll take as much as you can give us */
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
 		len = avcodec_decode_audio3(context->Cctx, (short *)context->Outbuf, &out_size, &context->Packet);
-        if (len < 0) {
-            fprintf(stderr, "avcodec_decode_audio3: Error while decoding: %d\n", len);
+
+        if (out_size < 0) {
+            fprintf(stderr, "Error while decoding, len: %d, out_size: %d\n", len, out_size);
 			return -1;
         }
 
@@ -110,3 +117,21 @@ int decode_packet(AVDecodeContext *context) {
 	
 	return 0;
 }
+
+
+/**
+ * check for presence of ID3 Tag in an AVDecodeContext
+ *
+ * @param the AVDecodeContext
+ * @return 1 if the current packet is an ID3 tag, 0 otherwise
+ */
+int is_id3_tag(AVDecodeContext *context) {
+	if (context->Cctx->codec_id == CODEC_ID_MP3) {
+		if ((context->Packet.data[0] == 'T') && (context->Packet.data[1] == 'A') && (context->Packet.data[2] == 'G')) {
+			return -1;
+		}
+	}
+	
+	return 0;
+}
+ 
