@@ -31,6 +31,7 @@ typedef struct MPADecodeHeader {
 void init_decoding(void);
 int prepare_decoding(char *filename, AVDecodeContext *context);
 int decode_packet(AVDecodeContext *context);
+AVStreamInfo get_stream_info(AVDecodeContext *context);
 int is_id3_tag(AVDecodeContext *context);
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate);
 int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
@@ -196,6 +197,16 @@ int decode_packet(AVDecodeContext *context) {
 	return 0;
 }
 
+
+/**
+ * return the AVStreamInfo struct from an AVDecodeContext
+ *
+ * @param the AVDecodeContext
+ * @return the AVStreamInfo thereof
+ */
+AVStreamInfo get_stream_info(AVDecodeContext *context) {
+	return context->Info;
+}
 
 /**
  * check for presence of ID3 Tag in an AVDecodeContext
