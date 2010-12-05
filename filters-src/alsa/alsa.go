@@ -67,8 +67,6 @@ func (self *AlsaSource) Start() {
         }
 
         //send it on down the line
-
-        //send it on down the line
         self.ctx.Sink <- buff
     }
 
