@@ -72,6 +72,12 @@ func (self *AlsaSource) Start() {
 
 }
 
+func (self *AlsaSource) Stop() os.Error {
+    C.snd_pcm_close(self.capture)
+    close(self.ctx.Sink)
+    return nil
+}
+
 /////
 // Alsa Sink
 // Outputs to speakers via ALSA
@@ -119,14 +125,17 @@ func (self *AlsaSink) Start() {
     return
 }
 
+func (self *AlsaSink) Stop() os.Error {
+    C.snd_pcm_close(self.playback)
+    return nil
+}
+
 // Ugly bastardized C code follows
 func (self *AlsaSink) prepare() os.Error {
 
     if errno := C.snd_pcm_open(&self.playback, C.CString("default"), C.SND_PCM_STREAM_PLAYBACK, 0); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not open device. Error %d", errno) )
     }
-
-    defer C.snd_pcm_close(self.playback)
 
     if errno := C.snd_pcm_hw_params_malloc(&self.params); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not allocate hardware parameter structure. Error %d", errno) )
@@ -172,8 +181,6 @@ func (self *AlsaSource) prepare() os.Error {
     if errno := C.snd_pcm_open(&self.capture, C.CString("default"), C.SND_PCM_STREAM_CAPTURE, 0); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not open device. Error %d", errno) )
     }
-
-    defer C.snd_pcm_close(self.capture)
 
     if errno := C.snd_pcm_hw_params_malloc(&self.params); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not allocate hardware parameters. Error %d", errno) )

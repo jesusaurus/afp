@@ -21,12 +21,17 @@ func (self *ChiptuneFilter) GetType() int {
 
 func (self *ChiptuneFilter) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
-
-    header <-ctx.HeaderSource
-
+    self.header <-self.ctx.HeaderSource
+    self.ctx.HeaderSink <- self.header
     return nil
 }
 
 func (self *ChiptuneFilter) Start() {
+    var
+
     return
+}
+
+func (self *ChiptuneFilter) Stop() os.Error {
+    return nil
 }
