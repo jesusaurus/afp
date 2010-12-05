@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+mkdir filters 2> /dev/null
 echo "####### Building Libs #######"
 cd lib
 ./build-libs
