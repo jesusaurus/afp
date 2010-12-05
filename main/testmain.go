@@ -5,17 +5,11 @@
 package main
 
 import (
-	"afp"
+//	"afp"
 //	"os/signal"
 	"log"
 	"os"
 	)
-
-type FilterWrapper struct {
-	filter afp.Filter
-	name string
-	finished chan int
-}
 
 var pipespec [][]string = [][]string{{"nullsource"},{"nulllink"},{"nullsink"}}
 

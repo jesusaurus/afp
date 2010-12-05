@@ -12,26 +12,34 @@ import (
 	"runtime"
 )
 
+type FilterWrapper struct {
+	filter afp.Filter
+	ctx *afp.Context
+	name string
+	finished chan int
+}
 
 //Assume: every filter spec has length of at least 1
 //Potential issue: With this scheme, every pipeline must have at least 2 filters
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
-
 	var (
 		link           chan [][]float32       = make(chan [][]float32, CHAN_BUF_LEN)
 		headerLink     chan afp.StreamHeader = make(chan afp.StreamHeader, 1)
 		nextLink       chan [][]float32
 		nextHeaderLink chan afp.StreamHeader
+		ctx *afp.Context
 	)
 
-	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:],
-		&afp.Context{
-			Sink:       link,
-			HeaderSink: headerLink,
-			Verbose:    verbose,
-			Err:        errors,
-			Info:       info,
-		})
+	ctx = &afp.Context{
+	Sink:       link,
+	HeaderSink: headerLink,
+	Verbose:    verbose,
+	Err:        errors,
+	Info:       info,
+	}
+
+	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:], ctx)
+
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
@@ -41,44 +49,48 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		os.Exit(1)
 	}
 
-	Pipeline = append(Pipeline, &FilterWrapper{src, pipelineSpec[0][0], make(chan int, 1)})
+	Pipeline = append(Pipeline, &FilterWrapper{src, ctx, pipelineSpec[0][0], make(chan int, 1)})
 
 	for _, filterSpec := range pipelineSpec[1 : len(pipelineSpec)-1] {
 		nextLink = make(chan [][]float32, CHAN_BUF_LEN)
 		nextHeaderLink = make(chan afp.StreamHeader, 1)
 
-		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:],
-			&afp.Context{
-				Source:       link,
-				HeaderSource: headerLink,
-				Sink:         nextLink,
-				HeaderSink:   nextHeaderLink,
-				Verbose:      verbose,
-				Err:          errors,
-				Info:         info,
-			})
+		ctx = &afp.Context{
+		Source:       link,
+		HeaderSource: headerLink,
+		Sink:         nextLink,
+		HeaderSink:   nextHeaderLink,
+		Verbose:      verbose,
+		Err:          errors,
+		Info:         info,
+		}
+
+		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:], ctx)
+
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.String())
 			os.Exit(1)
 		}
 
-		Pipeline = append(Pipeline, &FilterWrapper{newFilter, filterSpec[0], make(chan int, 1)})
+		Pipeline = append(Pipeline, &FilterWrapper{newFilter, ctx, filterSpec[0], make(chan int, 1)})
 
 		link = nextLink
 		headerLink = nextHeaderLink
 
 	}
 
+	ctx = &afp.Context{
+	Source:       link,
+	HeaderSource: headerLink,
+	Verbose:      verbose,
+	Err:          errors,
+	Info:         info,
+	}
+
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
-		pipelineSpec[len(pipelineSpec) - 1][1:],
-		&afp.Context{
-			Source:       link,
-			HeaderSource: headerLink,
-			Verbose:      verbose,
-			Err:          errors,
-			Info:         info,
-		})
+		pipelineSpec[len(pipelineSpec) - 1][1:], ctx)
+		
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
@@ -89,7 +101,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	}
 
 	Pipeline = append(Pipeline,
-		&FilterWrapper{sink, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
+		&FilterWrapper{sink, ctx, pipelineSpec[len(pipelineSpec) - 1][0], make(chan int, 1)})
 }
 
 func StartPipeline() {
@@ -121,7 +133,6 @@ func constructFilter(name string, args []string, context *afp.Context) (afp.Filt
 var sdLock *sync.Mutex = &sync.Mutex{}
 
 func shutdown() {
-
 	//If multiple filters panic, their shutdown calls will be parallel
 	//Be sure that only one goes through
 	sdLock.Lock()
@@ -162,5 +173,8 @@ func RunFilter(f *FilterWrapper) {
 	}()
 
 	f.filter.Start()
+	if !closed(f.ctx.Sink) {
+		close(f.ctx.Sink)
+	}
 	f.finished <- 1
 }
