@@ -36,6 +36,7 @@ func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
         Channels: 1,
         SampleSize: 32,
         SampleRate: 44100,
+        FrameSize: 4096,
     }
 
     self.ctx.HeaderSink <- header
@@ -45,17 +46,49 @@ func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func (self *AlsaSource) Start() {
-    var buf [512]float32
-
+/*
+    var buf [][]float32
     for {
-        errno := C.snd_pcm_readn(self.capture, unsafe.Pointer(&buf[0]), 512)
+        errno := C.snd_pcm_readn(self.capture, unsafe.Pointer(&buf), 512)
         if errno < 512 {
             errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0);
             if errtwo < 0 {
                 panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
             }
         }
+        //
     }
+//Was I really so naïve?
+*/
+    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
+    buff := make([][]float32, self.header.FrameSize)
+    for {
+        length := len(cbuf)
+
+        //first off, grab some data from alsa
+        errno := C.snd_pcm_readi(self.capture, unsafe.Pointer(&cbuf[0]), length)
+        if errno < length {
+            errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0)
+            if errtwo < 0 {
+                panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
+            }
+        }
+
+        // snd_pcm_readi gives us a one dimensional array of interleaved data
+        // but what we want is a two dimensional array of samples
+        for i := 0; i < length; i += int(self.header.Channels) {
+            aSample := make([]float32, self.header.Channels)
+            for j := 0; j < int(self.header.Channels); j++ {
+                aSample[j] = cbuf[i+j]
+            }
+            k := i / int(self.header.Channels)
+            buff[k] = aSample
+        }
+
+        //send it on down the line
+        self.ctx.Sink <- buff
+    }
+
 }
 
 /////
@@ -84,7 +117,7 @@ func (self *AlsaSink) Start() {
     buffer, ok := <-self.ctx.Source
     for ok {
         length := len(buffer)
-        errno := C.snd_pcm_writen(playback, unsafe.Pointer(buffer), length)
+        errno := C.snd_pcm_writen(playback, unsafe.Pointer(&buffer), length)
 
         if errno < length {
             //not all the data was written
