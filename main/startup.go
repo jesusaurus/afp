@@ -146,8 +146,8 @@ func shutdown() {
 func RunFilter(f *FilterWrapper) {
 	defer func() {
 		if x := recover(); x != nil {
-			errors.Printf("[***] Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
-
+			errors.Printf("Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
+/*
 			var btSync sync.Mutex
 			btSync.Lock()
 			defer btSync.Unlock()
@@ -163,10 +163,10 @@ func RunFilter(f *FilterWrapper) {
 				}
 
 				f := runtime.FuncForPC(pc)
-				errors.Printf("[***]---> %d(%s): %s:%d\n", i-1, f.Name(), file, line)
+				errors.Printf("---> %d(%s): %s:%d\n", i-1, f.Name(), file, line)
 				i++
 			}
-
+*/
 			shutdown()
 			os.Exit(1)
 		}
