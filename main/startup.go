@@ -12,16 +12,22 @@ import (
 	"runtime"
 )
 
+type FilterWrapper struct {
+	filter afp.Filter
+	ctx *afp.Context
+	name string
+	finished chan int
+}
 
 //Assume: every filter spec has length of at least 1
 //Potential issue: With this scheme, every pipeline must have at least 2 filters
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
-
 	var (
 		link           chan [][]float32       = make(chan [][]float32, CHAN_BUF_LEN)
 		headerLink     chan afp.StreamHeader = make(chan afp.StreamHeader, 1)
 		nextLink       chan [][]float32
 		nextHeaderLink chan afp.StreamHeader
+		ctx *afp.Context
 	)
 
 	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:],
@@ -121,7 +127,6 @@ func constructFilter(name string, args []string, context *afp.Context) (afp.Filt
 var sdLock *sync.Mutex = &sync.Mutex{}
 
 func shutdown() {
-
 	//If multiple filters panic, their shutdown calls will be parallel
 	//Be sure that only one goes through
 	sdLock.Lock()
@@ -162,5 +167,6 @@ func RunFilter(f *FilterWrapper) {
 	}()
 
 	f.filter.Start()
+	f.
 	f.finished <- 1
 }

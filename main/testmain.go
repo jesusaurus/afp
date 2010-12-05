@@ -11,12 +11,6 @@ import (
 	"os"
 	)
 
-type FilterWrapper struct {
-	filter afp.Filter
-	name string
-	finished chan int
-}
-
 var pipespec [][]string = [][]string{{"nullsource"},{"nulllink"},{"nullsink"}}
 
 const CHAN_BUF_LEN = 16
