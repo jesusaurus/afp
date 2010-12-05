@@ -50,11 +50,11 @@ func (self *AlsaSource) Start() {
         length := len(cbuf)
 
         //first off, grab some data from alsa
-        errno := C.snd_pcm_readi(self.capture, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
-        if errno < C.snd_pcm_sframes_t(length) {
-            errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0)
-            if errtwo < 0 {
-                panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
+        read := C.snd_pcm_readi(self.capture, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
+        if read < C.snd_pcm_sframes_t(length) {
+            errno := C.snd_pcm_recover(self.capture, C.int(read), 0)
+            if errno < 0 {
+                panic(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errno))
             }
         }
 
@@ -97,18 +97,28 @@ func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func (self *AlsaSink) Start() {
-    buffer, ok := <-self.ctx.Source
-    for ok {
+    for buffer := range self.ctx.Source { //reading a [][]float32
+        cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
         length := len(buffer)
-        errno := C.snd_pcm_writen(self.playback, unsafe.Pointer(&buffer), length)
+        chans := int(self.header.Channels)
 
-        if errno < length {
-            //not all the data was written
-            panic( os.NewError(fmt.Sprintf("Could not write all data to ALSA device, error: ", errno)) )
+        //interleave the channels
+        for i := 0; i < length; i += chans {
+            for j := 0; j < chans; j++ {
+                cbuf[i+j] = buffer[i / chans][j]
+            }
         }
 
-        buffer, ok := <-self.ctx.Source
+        //write some data to alsa
+        written := C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
+
+        if int(written) < length {
+            //not all the data was written
+            panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: ", written))
+        }
     }
+
+    return
 }
 
 // Ugly bastardized C code follows
@@ -136,11 +146,11 @@ func (self *AlsaSink) prepare() os.Error {
         return os.NewError( fmt.Sprintf("Could not set sample format. Error %d", errno) )
     }
 
-    if errno := C.snd_pcm_hw_params_set_rate(self.playback, self.params, self.header.SampleRate, 0); errno < 0 {
+    if errno := C.snd_pcm_hw_params_set_rate(self.playback, self.params, C.uint(self.header.SampleRate), 0); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not set sample rate. Error %d", errno) )
     }
 
-    if errno := C.snd_pcm_hw_params_set_channels(self.playback, self.params, self.header.Channels); errno < 0 {
+    if errno := C.snd_pcm_hw_params_set_channels(self.playback, self.params, C.uint(self.header.Channels)); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not set channel count. Error %d", errno) )
     }
 
@@ -154,6 +164,7 @@ func (self *AlsaSink) prepare() os.Error {
         return os.NewError( fmt.Sprintf("Could not prepare audio device for use. Error %d", errno) )
     }
 
+    return nil
 }
 
 //this one is slightly different
@@ -182,7 +193,7 @@ func (self *AlsaSource) prepare() os.Error {
         return os.NewError( fmt.Sprintf("Could not set sample format. Error %d", errno) )
     }
 
-    if errno := C.snd_pcm_hw_params_set_rate(self.capture, self.params, self.header.SampleRate, 0); errno < 0 {
+    if errno := C.snd_pcm_hw_params_set_rate(self.capture, self.params, C.uint(self.header.SampleRate), 0); errno < 0 {
         return os.NewError( fmt.Sprintf("Could not set sample rate. Error %d", errno) )
     }
 
