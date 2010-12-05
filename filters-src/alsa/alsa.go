@@ -44,20 +44,6 @@ func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func (self *AlsaSource) Start() {
-/*
-    var buf [][]float32
-    for {
-        errno := C.snd_pcm_readn(self.capture, unsafe.Pointer(&buf), 512)
-        if errno < 512 {
-            errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0);
-            if errtwo < 0 {
-                panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
-            }
-        }
-        //
-    }
-//Was I really so naïve?
-*/
     cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
     buff := make([][]float32, self.header.FrameSize)
     for {
@@ -86,7 +72,6 @@ func (self *AlsaSource) Start() {
         //send it on down the line
         self.ctx.Sink <- buff
     }
-
 }
 
 /////
@@ -106,7 +91,7 @@ func (self *AlsaSink) GetType() int {
 
 func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
-    self.header <-self.ctx.HeaderSource
+    self.header = <-self.ctx.HeaderSource
     retval := self.prepare()
     return retval
 }
