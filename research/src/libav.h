@@ -12,6 +12,12 @@
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 
+/**
+ * General information about a stream
+ *
+ * FIXME: elaborate
+ */
+
 typedef struct {
 	int32_t Channels;
 	int32_t Sample_size;
@@ -19,6 +25,12 @@ typedef struct {
 	int64_t Content_length;
 	int32_t Frame_size; 
 } AVStreamInfo;
+
+/**
+ * A bunch of state to be passed around for the duration of a decode
+ *
+ * FIXME: elaborate
+ */
 
 typedef struct {
 	AVCodec *Codec;
@@ -51,6 +63,12 @@ static inline int ff_mpa_check_header(uint32_t header){
         return -1;
     return 0;
 }
+
+/**
+ * modified from libavutil/intreadwrite.h
+ *
+ * does "fun" byt order conversions
+ */
 
 #ifndef AV_RB32
 #   define AV_RB32(x)                           \
