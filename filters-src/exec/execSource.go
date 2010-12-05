@@ -2,8 +2,12 @@ package fexec
 
 import (
 	"afp"
-	"os"
+	//"os"
 )
+
+type ExecSource struct {
+	execFilter
+}
 
 func NewExecSource() afp.Filter {
 	return &ExecSource{execFilter{}}
