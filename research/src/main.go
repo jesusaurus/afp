@@ -48,7 +48,7 @@ func main() {
 		
 		if l > 0 {
 			numberOfSamples := l / bytesPerSample
-/*			fmt.Fprintf(os.Stderr, "Frame: %d Length: %d Number of samples: %d\n", frame, l, numberOfSamples)*/
+			fmt.Fprintf(os.Stderr, "Frame: %d Length: %d Number of samples: %d\n", frame, l, numberOfSamples)
 			frame += 1
 			length += numberOfSamples
 			decodedSamples := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(context.Context.Outbuf)))[:numberOfSamples]
@@ -56,6 +56,8 @@ func main() {
 /*			os.Stdout.Write((*(*[1 << 31 - 1]uint8)(unsafe.Pointer(context.Context.Outbuf)))[:(numberOfSamples*bytesPerSample)])*/
 			buffer[1 - currBuffer] = append(buffer[currBuffer], decodedSamples...)
 			currBuffer = 1 - currBuffer;
+		} else {
+			fmt.Fprintf(os.Stderr, "Frame: %d Length: %d\n", frame, l)
 		}
 	}
 	
