@@ -6,23 +6,23 @@ package fexec
 
 import (
 	"afp"
-	"afp/flags"
+	//"afp/flags"
 	"os"
 	"exec"
 	"encoding/binary"
+	"syscall"
 )
 
 type execFilter struct {
-	context *types.Context
+	context *afp.Context
 	filter *exec.Cmd
-	header *types.StreamHeader
+	header *afp.StreamHeader
 	endianness binary.ByteOrder
 	commErrors chan os.Error
 	finished chan int	
 }
 
 func (self *execFilter) Stop() os.Error {
-	self.filter.Close(os.WNOHANG)
 	syscall.Kill(self.filter.Pid, syscall.SIGTERM)
 	self.finished <- 1
 
@@ -71,9 +71,9 @@ func (self *execFilter) encoder() {
 	self.write(self.header.OtherLength)
 	self.write(self.header.Other)
 
-	for _, frame := range self.ctx.Source {
+	for frame := range self.context.Source {
 		for _, slice := range frame {
-			self.write(self.filter.Stdin, self.endianness, slice)
+			self.write(slice)
 		}
 	}
 }
@@ -87,7 +87,7 @@ func (self *execFilter) read(v interface{}) {
 }
 
 func (self *execFilter) decoder() {
-	OutHeader := &afp.StreamHeader{}
+	OutHeader := afp.StreamHeader{}
 
 	self.read(&OutHeader.HeaderLength)
 	self.read(&OutHeader.Version)
@@ -98,26 +98,24 @@ func (self *execFilter) decoder() {
 	self.read(&OutHeader.ContentLength)
 	self.read(&OutHeader.OtherLength)
 
-	var other [OutHeader.OtherLength]byte
-
-	self.read(&other)
-	OutHeader.Other = other[:]
+	OutHeader.Other = make([]byte, OutHeader.OtherLength)
+	self.read(OutHeader.Other)
 
 	self.context.HeaderSink <- OutHeader
 
-	frame [][]float32 := make([][]float32, FrameSize)
+	frame := make([][]float32, OutHeader.FrameSize)
 
 	for {
-		var rawFrame [OutHeader.Channels * OutHeader.FrameSize]float32
-		err := self.read(&rawFrame)
-		for i, slice := 0, 0; i < OutHeader.FrameSize / OutHeader.Channels; slice++ {
+		rawFrame := make([]float32, int32(OutHeader.Channels) * OutHeader.FrameSize)
+		self.read(rawFrame)
+		for i, slice := 0, 0; i < OutHeader.FrameSize / int32(OutHeader.Channels); slice++ {
 			frame[slice] = rawFrame[i:i + OutHeader.Channels]
 			i +=  OutHeader.Channels
 		}
 	}
 }
 
-func (self *ExecFilter) errors() {
+func (self *execFilter) errors() {
 	errs := bufio.NewReader(self.filter.Stderr)
 
 	for str, e := errs.ReadString('\n'); err == nil; str, e = errs.ReadString('\n') {
