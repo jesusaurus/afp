@@ -1,6 +1,4 @@
 // Copyright (c) 2010 Go Fightclub Authors
-// This source code is released under the terms of the
-// MIT license. Please see the file LICENSE for license details.
 
 package alsa
 
@@ -66,8 +64,8 @@ func (self *AlsaSource) Start() {
         length := len(cbuf)
 
         //first off, grab some data from alsa
-        errno := C.snd_pcm_readi(self.capture, unsafe.Pointer(&cbuf[0]), length)
-        if errno < length {
+        errno := C.snd_pcm_readi(self.capture, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
+        if errno < C.snd_pcm_sframes_t(length) {
             errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0)
             if errtwo < 0 {
                 panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
@@ -108,7 +106,7 @@ func (self *AlsaSink) GetType() int {
 
 func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
-    header <-self.ctx.HeaderSource
+    self.header <-self.ctx.HeaderSource
     retval := self.prepare()
     return retval
 }
@@ -117,7 +115,7 @@ func (self *AlsaSink) Start() {
     buffer, ok := <-self.ctx.Source
     for ok {
         length := len(buffer)
-        errno := C.snd_pcm_writen(playback, unsafe.Pointer(&buffer), length)
+        errno := C.snd_pcm_writen(self.playback, unsafe.Pointer(&buffer), length)
 
         if errno < length {
             //not all the data was written
