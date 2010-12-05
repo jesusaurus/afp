@@ -55,7 +55,7 @@
 /*
  * Audio decoding.
  */
-static void audio_decode_example(const char *outfilename, const char *filename)
+static void audio_decode_example(const char *filename, const char *outfilename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
@@ -69,26 +69,11 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     printf("Audio decoding\n");
 
-    /* find the mpeg audio decoder */
-    codec = avcodec_find_decoder(CODEC_ID_MP3);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
-    c= avcodec_alloc_context();
-
-    /* open the codec */
-    if (avcodec_open(c, codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        exit(1);
-    }
-
     outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 
 	/* use libavformat to open the source file; initializes AVFormatContext */
     if ((err = av_open_input_file(&fctx, filename, NULL, 0, NULL)) < 0) {
-        fprintf(stderr, "av_open_input_file: error %d\n", err);
+        fprintf(stderr, "av_open_input_file: error %d opening %s\n", err, filename);
         exit(1);
     }
 
@@ -96,6 +81,25 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     err = av_find_stream_info(fctx);
     if (err < 0) {
         fprintf(stderr, "av_find_stream_info: error %d\n", err);
+        exit(1);
+    }
+	dump_format(fctx, 0, filename, 0);
+	
+	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
+	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
+
+	/* find the audio decoder */
+    codec = avcodec_find_decoder(guessed_codec);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+		exit(1);
+    }
+
+    c= avcodec_alloc_context();
+
+    /* open the codec */
+    if (avcodec_open(c, codec) < 0) {
+        fprintf(stderr, "could not open codec\n");
         exit(1);
     }
 
@@ -145,6 +149,11 @@ int main(int argc, char **argv)
 {
     const char *filename;
 
+	if (argc != 3) {
+		fprintf(stderr, "Damn, yo. call me with input & output paths\n");
+		exit(-1);
+	}
+
 	/* must be called before using avformat lib */
     av_register_all();
 
@@ -154,12 +163,7 @@ int main(int argc, char **argv)
     /* register all the codecs */
     avcodec_register_all();
 
-    if (argc <= 1) {
-        // audio_encode_example("/tmp/test.mp2");
-        audio_decode_example("/tmp/test.raw", "/tmp/test.mp3");
-    } else {
-        filename = argv[1];
-    }
+    audio_decode_example(argv[1], argv[2]);
 
     return 0;
 }
