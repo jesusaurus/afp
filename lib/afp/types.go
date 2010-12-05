@@ -38,4 +38,5 @@ type Filter interface {
 	GetType() int
 	Init(*Context, []string) os.Error
 	Start()
+	Stop() os.Error
 }
