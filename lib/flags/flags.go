@@ -16,7 +16,7 @@
 	1) Initialize a parser object
 	2) Define flags using parser's String(), Bool(), Int(), etc. Example:
 		import (
-			"fightclub/flags",
+			"afp/flags"
 			"os"
 			)
 		parser := flags.FlagParser(os.Args)
