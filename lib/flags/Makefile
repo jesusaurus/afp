@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=flags
+TARG=afp/flags
 GOFILES=flags.go
 
 
