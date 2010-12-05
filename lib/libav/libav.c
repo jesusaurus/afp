@@ -9,7 +9,6 @@
 
 
 #include "libav.h"
-#include <libavutil/intreadwrite.h>
 #include <string.h>
 
 #define MPA_DECODE_HEADER \
