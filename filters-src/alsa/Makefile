@@ -1,5 +1,5 @@
 include $(GOROOT)/src/Make.inc
-TARG=alsa
+TARG=afp/filters/alsa
 CGOFILES=alsa.go
 CGO_CFLAGS=`pkg-config --cflags alsa`
 CGO_LDFLAGS=`pkg-config --libs alsa`
