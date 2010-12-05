@@ -1,13 +1,15 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Modifications Copyright 2010 Aaron DeVore
-// MIT License
+//
+// Modifications Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
 
 package flags_test
 
 import (
-	"./flags"
+	"flags"
 	"fmt"
 	"testing"
 )

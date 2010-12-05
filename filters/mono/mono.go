@@ -1,4 +1,7 @@
 // Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+//
 // Mono filter
 // Combine all channels into a single channel
 // Uses the average of all channels

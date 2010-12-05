@@ -1,4 +1,7 @@
 // Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+//
 // The null package defines a set of filters which do nothing, mostly for testing purposes
 // NullSource: Close without passing any data through the pipeline
 // NullLink: Pass data straight through without processing
