@@ -5,7 +5,7 @@
 package main
 
 import (
-	"afp"
+//	"afp"
 //	"os/signal"
 	"log"
 	"os"
