@@ -110,26 +110,26 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 
     /* set up Info context */
 	context->Info.Content_length = 0;
-	
-	// int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
-	
-	int bit_rot;
-	uint32_t head = AV_RB32(context->Packet.data);
-	err = ff_mpa_decode_header(context->Cctx, 
-		head, 
-		&context->Info.Sample_rate, 
-		&context->Info.Channels,
-		&context->Info.Frame_size,
-		&bit_rot);
-	
-	MPADecodeHeader s1, *s = &s1;
-	if (err < 0) {
-		fprintf(stderr, "Error from ff_mpa_decode_header: %d\n", err);
-		fprintf(stderr, "ff_mpa_check_header: %d\n", ff_mpa_check_header(head));
-		fprintf(stderr, "ff_mpegaudio_decode_header: %d\n", ff_mpegaudio_decode_header(s, head));
 
-		return -1;
-	}
+	// FIXME: this will only work for mp3 files :(
+		int bit_rot;
+		uint32_t head = AV_RB32(context->Packet.data);
+		err = ff_mpa_decode_header(context->Cctx, 
+			head, 
+			&context->Info.Sample_rate, 
+			&context->Info.Channels,
+			&context->Info.Frame_size,
+			&bit_rot);
+	
+		MPADecodeHeader s1, *s = &s1;
+		if (err < 0) {
+			fprintf(stderr, "Error from ff_mpa_decode_header: %d\n", err);
+			fprintf(stderr, "ff_mpa_check_header: %d\n", ff_mpa_check_header(head));
+			fprintf(stderr, "ff_mpegaudio_decode_header: %d\n", ff_mpegaudio_decode_header(s, head));
+
+			return -1;
+		}
+	// FIXME
 	
 	// context->Info.Channels = context->Cctx->channels;
 	// context->Info.Sample_rate = context->Cctx->sample_rate;
