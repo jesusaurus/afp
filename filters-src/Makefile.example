@@ -1,12 +1,8 @@
 include $(GOROOT)/src/Make.inc
 
-PKG_NAME=myfilter
+TARG=afp/filters/myfilter
 GOFILES=\
 		foo.go\
 		bar.go
 
-build:
-	$(GC) -o $(PKG_NAME).$(O) $(GOFILES)
-
-install:
-	cp $(PKG_NAME).$(O) $(PROJ_ROOT)/filters
+include $(GOROOT)/src/Make.inc

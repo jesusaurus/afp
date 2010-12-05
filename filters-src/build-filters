@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 
-export PROJ_ROOT=`pwd`/..
-
 for F in `find -maxdepth 1 -mindepth 1 -type d`; do
 	echo "-- Building $F"
 	cd $F
-	make && make install
+	gomake && gomake install
 	cd ..
 done
-
-export PROJ_ROOT=
