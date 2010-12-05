@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 //
-// Modifications Copyright 2010 Aaron DeVore
+// Modifications Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
 
 /*
 	This flag package is an object version of the flag package in Go's
@@ -14,7 +16,7 @@
 	1) Initialize a parser object
 	2) Define flags using parser's String(), Bool(), Int(), etc. Example:
 		import (
-			"fightclub/flags",
+			"afp/flags"
 			"os"
 			)
 		parser := flags.FlagParser(os.Args)
