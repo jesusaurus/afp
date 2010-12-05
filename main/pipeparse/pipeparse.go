@@ -5,26 +5,36 @@ import (
 	"fmt"
 	"strings"
 	"os"
+	"regexp"
 )
 
 const INITIAL_STAGE_SIZE = 30
 
 
 func ParsePipeline(args []string) ([]string, [][]string) {
-	stageArgs = make([][]string, INITIAL_STAGE_SIZE)
-	mainArgs = make([]string, INITIAL_STAGE_SIZE)
-	stagesStart int
+	var pipelineStart int
+	mainArgs := make([]string, 0, 3)
+	stages := make([][]string, 0, INITIAL_STAGE_SIZE)
 	for i, arg := range args[1:] {
 		if !strings.HasPrefix(arg, "-") {
-			stagesStart = i
+			pipelineStart = i + 1
+			break
+		} else {
+			mainArgs = append(mainArgs, arg)
 		}
+	}
 
+	currentStage := make([]string, 0, 10)
+	for _, arg := range args[pipelineStart:] {
+		if arg == "!" {
+			stages = append(stages, currentStage)
+			currentStage = make([]string, 0, 10)
+		} else {
+			currentStage = append(currentStage, arg)
+		}
+	}
 
-	result = make([][]string, 30)
-	for i, arg := range args[1:] {
-
-	append(stageArgs, )
-	return mainArgs, stageArgs
+	return mainArgs, stages
 }
 
 //If the pipeline is being pulled from a file, we'll need to split it

@@ -1,6 +1,8 @@
+package pipeparse_test
+
 import (
 	"testing"
-	"./parsepipe"
+	"main"
 )
 
 func TestEmptyPipeline(t *testing.T) {
@@ -14,6 +16,7 @@ func TestEmptyPipeline(t *testing.T) {
 
 func TestAll(t *testing.T) {
 	args = []string{"apl", "-v", "filesrc", "-t", "flac", "file", "!", "filesink", "file"}
-	parsed := parsepipe.ParsePipeline(args)
-	parsed.Flags.Bool("verbose"
-	parsed.Flags.Parse()
+	mainArgs, stages := parsepipe.ParsePipeline(args)
+}
+// 	parsed.Flags.Bool("verbose"
+// 	parsed.Flags.Parse()
