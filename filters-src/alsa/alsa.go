@@ -60,9 +60,9 @@ func (self *AlsaSource) Start() {
     }
 //Was I really so naïve?
 */
-    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
-    buff := make([][]float32, self.header.FrameSize)
     for {
+		cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
+		buff := make([][]float32, self.header.FrameSize)
         length := len(cbuf)
 
         //first off, grab some data from alsa
