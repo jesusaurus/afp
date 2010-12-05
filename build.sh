@@ -10,3 +10,5 @@ echo "####### Building Main ######"
 cd ../main
 make	
 cd ..
+
+chmod -R g+rw $GOROOT/pkg/linux_amd64/afp*
