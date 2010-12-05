@@ -42,16 +42,15 @@ func ParsePipeline(args []string) ([]string, [][]string) {
 }
 
 //If the pipeline is being pulled from a file, we'll need to split it
-func getSpecFromFile(path string) []string {
+func GetPipelineFromFile(path string) ([]string, os.Error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open '%s': %s", path, err.String())
-		os.Exit(1)
+		return nil, err
 	}
 
 	//The file may have newlines or odd whitespace patterns
 	//Replace them by single spaces before we split
 	strSpec := regexp.MustCompile(`[ \t\n\r]+`).ReplaceAllString(string(bytes), " ")
 
-	return strings.Split(strSpec, " ", -1)
+	return strings.Split(strSpec, " ", -1), nil
 }
