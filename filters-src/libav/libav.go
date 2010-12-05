@@ -1,5 +1,6 @@
 package libavfilter
 
+
 import (
 	"afp"
 	"afp/flags"
@@ -9,11 +10,19 @@ import (
 )
 
 
-/* 
- * LibAVSource
+/**
+ * Filter: LibAVSource
  *
  * Flags:
  * -i inputFile
+ *
+ * We carry a main afp.Context as all filters
+ * And also an AVDecodeContext for interfacing with libAV
+ * the streamInfo contains general information about the input file; but will only work for MP3 files :(
+ * floatSamples contain the input data converted into -1.0 to 1.0 float32 data arranged in 
+ *   a 2D array indexed by sample then bychannel 
+ * currBuffer holds the index of the current buffer
+ * inFile is the path of the input file
  */
 
 type LibAVSource struct {
@@ -26,9 +35,19 @@ type LibAVSource struct {
 	inFile string
 }
 
+
+/**
+ * initialize the filter storage
+ */
+
 func NewLibAVSource() afp.Filter {
 	return &LibAVSource{}
 }
+
+
+/**
+ * find our input file and set up libav structures
+ */
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
@@ -41,16 +60,8 @@ func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 		self.inFile = *i;
 	} else {
 		return os.NewError("Please specify an input file, good sir")
-	}	
-
-	return nil
-}
-
-func (self *LibAVSource) GetType() int {
-	return afp.PIPE_SOURCE
-}
-
-func (self *LibAVSource) Start() {
+	}
+	
 	libav.InitDecoding()
 	libav.PrepareDecoding(self.inFile, &self.dctx)
 
@@ -67,7 +78,28 @@ func (self *LibAVSource) Start() {
 	}
 	
 	self.currBuffer = 0
+	
 
+	return nil
+}
+
+
+/**
+ * LibAVSource is unsurprisingly a source
+ */
+
+func (self *LibAVSource) GetType() int {
+	return afp.PIPE_SOURCE
+}
+
+
+/**
+ * send the StreamHeader down the pipe,
+ * then successively decode each packet in the stream until there is no more data
+ * bouncing the decoded data between the two main floatSamples buffers
+ */
+
+func (self *LibAVSource) Start() {
 	self.actx.HeaderSink <- afp.StreamHeader{
 		Version : 1,
 		Channels : int8(self.streamInfo.Channels),
@@ -88,6 +120,9 @@ func (self *LibAVSource) Start() {
 	}
 }
 
+/**
+ * convert intSamples into floatSamples (-1.0 .. 1.0)
+ */
 func (self *LibAVSource) int16ToFloat32(intSamples []int16) {	
 	var (
 		streamOffset int32 = 0
@@ -103,6 +138,9 @@ func (self *LibAVSource) int16ToFloat32(intSamples []int16) {
 	}
 }
 
+/**
+ * close the Sink
+ */
 func (self *LibAVSource) Stop() os.Error {
 	close(self.actx.Sink)
 	return nil
