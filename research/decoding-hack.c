@@ -60,7 +60,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     AVCodec *codec;
     AVCodecContext *c= NULL;
     AVFormatContext *fctx;
-    int out_size, len, err;
+	int out_size, len, err, i = 0;
     FILE *outfile;
     uint8_t *outbuf;
     AVPacket avpkt;
@@ -106,11 +106,11 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-	fprintf(stderr, "Duration: %lld, file size: %lld", fctx->duration, fctx->file_size);
+	fprintf(stderr, "Duration: %lld, file size: %lld\n", fctx->duration, fctx->file_size);
 
 	/* read frames into the AVPacket, then decode them */
     while ((err = av_read_frame(fctx, &avpkt)) >= 0) {
-		fprintf(stderr, "dts: %lld pts: %lld len: %d pkt size: %d out size: %d duration: %d pos %lld\n", 
+		fprintf(stderr, "i: %d, dts: %lld pts: %lld len: %d pkt size: %d out size: %d duration: %d pos %lld\n", i++,
 					avpkt.dts, avpkt.pts, len, avpkt.size, out_size, avpkt.duration, avpkt.pos);
 
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
@@ -118,8 +118,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 		/* did libavformat just hand us an ID3V1 tag? */
 		if (!((avpkt.data[0] == 'T') && (avpkt.data[1] == 'A') && (avpkt.data[2] == 'G'))) {
 	        len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
-	        if (len < 0) {
-	            fprintf(stderr, "Error while decoding\n");
+	        if (out_size < 0) {
+	            fprintf(stderr, "Error while decoding, len: %d, out_size: %d\n", len, out_size);
 	            exit(1);
 	        }
 
