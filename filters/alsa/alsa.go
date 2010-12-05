@@ -50,8 +50,7 @@ func (self *AlsaSource) Start() {
         if errno < 512 {
             errtwo := C.snd_pcm_recover(self.capture, C.int(errno), 0);
             if errtwo < 0 {
-                fmt.Println( "While reading from ALSA device, failed to recover from error: ", errtwo)
-                panic
+                panic(os.NewError(fmt.Sprint( "While reading from ALSA device, failed to recover from error: ", errtwo)) )
             }
         }
     }
@@ -86,7 +85,8 @@ func (self *AlsaSink) Start() {
         errno := C.snd_pcm_writen(playback, unsafe.Pointer(buffer), length)
 
         if errno < length {
-            panic //not all the data was written
+            //not all the data was written
+            panic( os.NewError(fmt.Sprintf("Could not write all data to ALSA device, error: ", errno)) )
         }
 
         buffer, ok := <-self.ctx.Source
