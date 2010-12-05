@@ -1,3 +1,7 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -31,7 +35,7 @@ int WriteOut(char* file) {
     av_register_all();
     avcodec_init();
     avcodec_register_all();
-    
+
     av_init_packet(&packet);
 
     //load the codec
@@ -54,7 +58,7 @@ int WriteOut(char* file) {
     frame_size = cContext->frame_size;
     samples = malloc(frame_size * 2 * cContext->channels);
     outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
-   
+
     /*
     //create the format context
     fContext = avformat_alloc_context();
