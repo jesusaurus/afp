@@ -14,18 +14,18 @@ const CHAN_BUF_LEN = 16
 
 var (
 	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
-	errors *log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
-	info *log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
-	verbose bool
+	errors   *log.Logger      = log.New(os.Stderr, "[E] ", log.Ltime)
+	info     *log.Logger      = log.New(os.Stderr, "[I] ", log.Ltime)
+	verbose  bool
 	specFile string
-	)
+)
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
-	mainFlags := flags.FlagParser(mainArgs)	
+	mainFlags := flags.FlagParser(mainArgs)
 	mainFlags.BoolVar(&verbose, "v", false, "Verbose output")
 	mainFlags.StringVar(&specFile, "f", "",
-			"Pull pipeline spec from a file rather than command line")
+		"Pull pipeline spec from a file rather than command line")
 	mainFlags.Parse()
 
 	if specFile != "" {
