@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for F in `find -maxdepth 1 -mindepth 1 -type d`; do
+for F in `find . -maxdepth 1 -mindepth 1 -type d`; do
 	echo "-- Building $F"
 	cd $F
 	gomake && gomake install
