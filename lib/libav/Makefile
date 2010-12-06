@@ -4,7 +4,7 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=libav
+TARG=afp/libav
 CGOFILES=libav.go
 CGO_LDFLAGS=-lavformat -lavcodec -lavutil -lavcore -lavdevice -lavfilter -lz -lbz2
 CGO_CFLAGS=-g
