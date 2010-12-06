@@ -6,7 +6,6 @@ package main
 
 import (
 	"io/ioutil"
-	"fmt"
 	"strings"
 	"os"
 	"regexp"
