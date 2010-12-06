@@ -9,17 +9,21 @@ import (
 	"afp/filters/null"
 	"afp/filters/fexec"
 	"afp/filters/stdout"
+	"afp/filters/libav"
 //	"./filters/delay"
 //	"./filters/ospipe"
 //	"./filters/demo"
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
-	"exec"   : fexec.NewFilter,
-	"nullsource" : null.NewNullSource,
-	"nulllink"   : null.NewNullLink,
-	"nullsink" : null.NewNullSink,
-	"stdoutsink" : stdout.NewStdoutSink,
+	"execsink"		: fexec.NewExecSink,
+	"execlink"		: fexec.NewExecLink,
+	"execsource"	: fexec.NewExecSource,
+	"nullsource"	: null.NewNullSource,
+	"nulllink"		: null.NewNullLink,
+	"nullsink"		: null.NewNullSink,
+	"stdoutsink"	: stdout.NewStdoutSink,
+	"libavsource"	: libavfilter.NewLibAVSource,
 //	"delay"  : delay.NewFilter,
 //	"stdin"  : ospipe.StdinSource,
 //	"stdout" : ospipe.StdoutSink,
