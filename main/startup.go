@@ -19,7 +19,6 @@ type FilterWrapper struct {
 }
 
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
-	info.Printf("%v\n", pipelineSpec)
 	if len(pipelineSpec) < 2 {
 		errors.Println("Pipeline specification must have at least a Source and Sink")
 		os.Exit(1)
@@ -147,26 +146,6 @@ func RunFilter(f *FilterWrapper) {
 	defer func() {
 		if x := recover(); x != nil {
 			errors.Printf("Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
-/*
-			var btSync sync.Mutex
-			btSync.Lock()
-			defer btSync.Unlock()
-
-			i := 1
-
-			for {
-
-				pc, file, line, ok := runtime.Caller(i)
-
-				if !ok {
-					break
-				}
-
-				f := runtime.FuncForPC(pc)
-				errors.Printf("---> %d(%s): %s:%d\n", i-1, f.Name(), file, line)
-				i++
-			}
-*/
 			shutdown()
 			os.Exit(1)
 		}
@@ -174,7 +153,7 @@ func RunFilter(f *FilterWrapper) {
 
 	f.filter.Start()
 
-	if !closed(f.ctx.Sink) {
+	if f.ctx.Sink != nil && !closed(f.ctx.Sink) {
 		close(f.ctx.Sink)
 	}
 
