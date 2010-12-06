@@ -71,5 +71,5 @@ Cory Kolbeck <ckolbeck at cs.pdx.edu>
 .br
 Eric Oconnel <eoc at cs.pdx.edu>
 .SH "SEE ALSO"
-.BR afp-dev (3),
+.BR afp-dev (8),
 .BR afp (1)
