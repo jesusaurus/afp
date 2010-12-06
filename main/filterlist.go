@@ -15,7 +15,7 @@ import (
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"execsink"		: fexec.NewExecSink,
 	"execlink"		: fexec.NewExecLink,
-	"execsource"	: fexec.NewExecSource,*/
+	"execsource"	: fexec.NewExecSource,
 	"nullsource"	: null.NewNullSource,
 	"nulllink"		: null.NewNullLink,
 	"nullsink"		: null.NewNullSink,
