@@ -22,14 +22,22 @@ type AlsaSource struct {
     params *C.snd_pcm_hw_params_t
 }
 
+func NewAlsaSource() afp.Filter {
+    return &AlsaSource{}
+}
+
 func (self *AlsaSource) GetType() int {
     return afp.PIPE_SOURCE
 }
 
 func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
+    return nil
+}
 
-    header := afp.StreamHeader {
+func (self *AlsaSource) Start() {
+
+    self.header = afp.StreamHeader {
         Version: 1,
         Channels: 1,
         SampleSize: 32,
@@ -37,13 +45,13 @@ func (self *AlsaSource) Init(ctx *afp.Context, args []string) os.Error {
         FrameSize: 4096,
     }
 
-    self.ctx.HeaderSink <- header
+    self.ctx.HeaderSink <- self.header
 
     retval := self.prepare()
-    return retval
-}
+    if ( retval != nil) {
+        panic(retval)
+    }
 
-func (self *AlsaSource) Start() {
     for {
 		cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
 		buff := make([][]float32, self.header.FrameSize)
@@ -89,18 +97,27 @@ type AlsaSink struct {
 
 }
 
+func NewAlsaSink() afp.Filter {
+    return &AlsaSink{}
+}
+
 func (self *AlsaSink) GetType() int {
     return afp.PIPE_SINK
 }
 
 func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
     self.ctx = ctx
-    self.header = <-self.ctx.HeaderSource
-    retval := self.prepare()
-    return retval
+    return nil
 }
 
 func (self *AlsaSink) Start() {
+    self.header = <-self.ctx.HeaderSource
+
+    retval := self.prepare()
+    if (retval != nil) {
+        panic(retval)
+    }
+
     for buffer := range self.ctx.Source { //reading a [][]float32
         cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
         length := len(buffer)
