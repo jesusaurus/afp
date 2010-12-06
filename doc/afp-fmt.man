@@ -1,12 +1,11 @@
-Each module will run in a coroutine or separate process, communicating with its 
-neighbors in a raw format specified below.
+.ll 60n
+.TH AFP-FMT 5 "DECEMBER 2010" PSU "User Manuals"
+.SH NAME 
+afp-fmt \- audio format used by afp internally
+.SH OERVIEW
 
 bytes             Meaning
   _____________
-4|             | Header Length
- |             |
- |             |
- |_____________|
 1|_____________| Header Version Number
 1|_____________| Audio Channels
 1|_____________| Sample Size
@@ -22,14 +21,19 @@ bytes             Meaning
  |             |
  |             |
  |_____________|
-?|      .      | Additional header information (If any)
-        .       
- |      .      |
- |_____________|
 ?|      .      | Content - Interleaved Linear PCM
         .       
  |      .      |
  |_____________|
 
-For modules operating in the same address space, this format may be broken
-up and the header or individual channels sent separately.
+.SH AUTHORS
+Aaron Devore <adevore at cs.pdx.edu>
+.br
+K. Jon Harker <kjharke at cs.pdx.edu>
+.br
+Cory Kolbeck <ckolbeck at cs.pdx.edu>
+.br
+Eric Oconnel <eoc at cs.pdx.edu>
+.SH "SEE ALSO"
+.BR afp-dev (3),
+.BR afp-fmt (5)

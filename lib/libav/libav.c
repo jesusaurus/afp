@@ -58,19 +58,19 @@ void init_decoding(void) {
 /**
  * set up a decoding context
  *
- * @param the filename to decode
- * @param a pointer to an AVDecodeContext, will be initialized
+ * @param filename the filename to decode
+ * @param context a pointer to an AVDecodeContext, will be initialized
  * @return 0 on success, -1 on error
  */
 int prepare_decoding(char *filename, AVDecodeContext *context) {
 	int err, len, sample_size;
-    
+
 	/* use libavformat to open the source file; initializes AVFormatContext */
     if ((err = av_open_input_file(&context->Fctx, filename, NULL, 0, NULL)) < 0) {
         fprintf(stderr, "av_open_input_file: file: %s, error %d\n", filename, err);
 		return -1;
 	}
-	
+
 	/* find the input file's stream - assume this further sets up info w/in the AVFormatContext */
     err = av_find_stream_info(context->Fctx);
     if (err < 0) {
@@ -87,7 +87,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 
 	/* initialize the AVPacket */
     av_init_packet(&context->Packet);
-    
+
 	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
 	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
 
@@ -111,7 +111,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 	context->Outbuf = (int16_t *)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 	context->Buf_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 	context->first_frame_used = -1;
-	
+
 	/* decode the first packet, so that Info.Frame_size can be set ... :\ */
 	len = decode_packet(context);
 	if (len < 0) {
@@ -125,13 +125,13 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 	// FIXME: this will only work for mp3 files :(
 		int bit_rot;
 		uint32_t head = AV_RB32(context->Packet.data);
-		err = ff_mpa_decode_header(context->Cctx, 
-			head, 
-			&context->Info.Sample_rate, 
+		err = ff_mpa_decode_header(context->Cctx,
+			head,
+			&context->Info.Sample_rate,
 			&context->Info.Channels,
 			&context->Info.Frame_size,
 			&bit_rot);
-	
+
 		MPADecodeHeader s1, *s = &s1;
 		if (err < 0) {
 			fprintf(stderr, "Error from ff_mpa_decode_header: %d\n", err);
@@ -141,7 +141,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 			return -1;
 		}
 	// FIXME
-	
+
 	// context->Info.Channels = context->Cctx->channels;
 	// context->Info.Sample_rate = context->Cctx->sample_rate;
 	switch(context->Cctx->sample_fmt) {
@@ -159,7 +159,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 			return -1;
 	}
 	context->Info.Sample_size = sample_size;
-	
+
 	context->first_frame_used = 0;
 	context->Info.Frame_size = len / context->Info.Channels / context->Info.Sample_size;
 
@@ -170,12 +170,12 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 /**
  * decode a packet
  *
- * @param the AVDecodeContext
+ * @param context the AVDecodeContext
  * @return size of output buffer on success, -1 on error
  */
 int decode_packet(AVDecodeContext *context) {
 	int err, out_size, len;
-	
+
 	if (context->first_frame_used == 0) {
 		context->first_frame_used = 1;
 		return context->Info.Frame_size;
@@ -183,12 +183,12 @@ int decode_packet(AVDecodeContext *context) {
 
 	/* try to read a frame from the context */
 	err = av_read_frame(context->Fctx, &context->Packet);
-	
+
 	if (err < 0) {
 		fprintf(stderr, "av_read_frame: error %d\n", err);
 		return err;
 	}
-	
+
 	/* check for id3 tag */
 	if (!is_id3_tag(context)) {
 		/* we'll take as much as you can give us */
@@ -203,7 +203,7 @@ int decode_packet(AVDecodeContext *context) {
 
 		return out_size;
 	}
-	
+
 	return 0;
 }
 
@@ -211,7 +211,7 @@ int decode_packet(AVDecodeContext *context) {
 /**
  * return the AVStreamInfo struct from an AVDecodeContext
  *
- * @param the AVDecodeContext
+ * @param context the AVDecodeContext
  * @return the AVStreamInfo thereof
  */
 AVStreamInfo get_stream_info(AVDecodeContext *context) {
@@ -221,7 +221,7 @@ AVStreamInfo get_stream_info(AVDecodeContext *context) {
 /**
  * check for presence of ID3 Tag in an AVDecodeContext
  *
- * @param the AVDecodeContext
+ * @param context the AVDecodeContext
  * @return 1 if the current packet is an ID3 tag, 0 otherwise
  */
 int is_id3_tag(AVDecodeContext *context) {
@@ -229,7 +229,7 @@ int is_id3_tag(AVDecodeContext *context) {
 	if ((context->Packet.data[0] == 'T') && (context->Packet.data[1] == 'A') && (context->Packet.data[2] == 'G')) {
 		return -1;
 	}
-	
+
 	return 0;
 }
- 
+

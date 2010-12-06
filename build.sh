@@ -11,4 +11,4 @@ cd ../main
 make	
 cd ..
 
-chmod -R g+rw $GOROOT/pkg/linux_amd64/afp*
+chmod -R g+rwx $GOROOT/pkg/linux_amd64/afp* 2> /dev/null
