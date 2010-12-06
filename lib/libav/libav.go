@@ -33,7 +33,8 @@ func PrepareDecoding(infile string, context *AVDecodeContext) {
 }
 
 func DecodePacket(context AVDecodeContext) int {
-	return int(C.decode_packet(context.Context))
+	var ignore C.int
+	return int(C.decode_packet(context.Context, &ignore))
 }
 
 func StreamInfo(context AVDecodeContext) AVStreamInfo {

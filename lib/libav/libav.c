@@ -32,7 +32,7 @@ typedef struct MPADecodeHeader {
 
 void init_decoding(void);
 int prepare_decoding(char *filename, AVDecodeContext *context);
-int decode_packet(AVDecodeContext *context);
+int decode_packet(AVDecodeContext *context, int *out_size);
 AVStreamInfo get_stream_info(AVDecodeContext *context);
 int is_id3_tag(AVDecodeContext *context);
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate);
@@ -78,11 +78,11 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 		return -1;
     }
 
-	char buf[256];
-	AVStream *st = context->Fctx->streams[0];
+	// char buf[256];
+	// AVStream *st = context->Fctx->streams[0];
     
-	avcodec_string(buf, sizeof(buf), st->codec, 0);
-	fprintf(stderr, "codec string: %s", buf);
+	// avcodec_string(buf, sizeof(buf), st->codec, 0);
+	// fprintf(stderr, "codec string: %s", buf);
 	// dump_format(context->Fctx, 0, filename, 0);
 
 	/* initialize the AVPacket */
@@ -113,7 +113,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 	context->first_frame_used = -1;
 
 	/* decode the first packet, so that Info.Frame_size can be set ... :\ */
-	len = decode_packet(context);
+	decode_packet(context, &len);
 	if (len < 0) {
         fprintf(stderr, "decode_packet: error %d\n", err);
 		return -1;
@@ -171,14 +171,14 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
  * decode a packet
  *
  * @param context the AVDecodeContext
+ * @param decoded_bytes a place to store the number of decoded bytes, ignore if null
  * @return size of output buffer on success, -1 on error
  */
-int decode_packet(AVDecodeContext *context) {
+int decode_packet(AVDecodeContext *context, int *decoded_bytes) {
 	int err, out_size, len;
 
 	if (context->first_frame_used == 0) {
 		context->first_frame_used = 1;
-		return context->Info.Frame_size;
 	}
 
 	/* try to read a frame from the context */
@@ -201,7 +201,11 @@ int decode_packet(AVDecodeContext *context) {
 			return -1;
         }
 
-		return out_size;
+		if (decoded_bytes != NULL) {
+			*decoded_bytes = out_size;
+		}
+
+		return context->Info.Frame_size;
 	}
 
 	return 0;
