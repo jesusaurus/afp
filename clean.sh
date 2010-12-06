@@ -2,13 +2,13 @@
 
 echo "####### Building Libs #######"
 cd lib
-./build-libs
+./clean-libs
 echo "###### Building Filters #####"
 cd ../filters
-./build-filters
+./clean-filters
 echo "####### Building Main #######"
 cd ../main
-make	
+make clean	
 echo "##### Building Manpages #####"
 cd ../doc
-make
+make clean
