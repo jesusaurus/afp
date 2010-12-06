@@ -12,7 +12,6 @@ package null
 import (
 	"afp"
 	"os"
-	"fmt"
 )
 //Dummy parent struct, only defines Init/Stop
 type nullFilter struct {
@@ -21,7 +20,7 @@ type nullFilter struct {
 
 func (self *nullFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
-	fmt.Println(ctx)
+
 	return nil
 }
 

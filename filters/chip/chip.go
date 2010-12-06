@@ -27,8 +27,18 @@ func (self *ChiptuneFilter) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func (self *ChiptuneFilter) Start() {
-    var
+    for buffer := range self.ctx.Source {
+        var samples [][]float32 //reversed dimensions
+        samples = make([][]float32, self.header.Channels)
+        length = len(buffer)
 
+        for channel := 0; channel < self.ctx.Channels; channel++ {
+            samples[channel] = make([]float32, length)
+        }
+
+        for channel, i := 0, 0; i < length; channel, i = channel + 1, i + self.header.Channels {
+        }
+    }
     return
 }
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"afp"
 	"sync"
-	"runtime"
 )
 
 type FilterWrapper struct {
