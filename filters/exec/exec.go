@@ -48,6 +48,7 @@ func (self *execFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.context = ctx
 	self.commErrors = make(chan os.Error)
 	self.finished = make(chan int) 
+
 	return nil
 }
 

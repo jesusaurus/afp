@@ -10,7 +10,6 @@ import (
 	"afp/filters/fexec"
 	"afp/filters/stdout"
 //	"./filters/delay"
-//	"./filters/fexec"
 //	"./filters/ospipe"
 //	"./filters/demo"
 )
