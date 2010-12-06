@@ -36,8 +36,17 @@ func (self *ChiptuneFilter) Start() {
             samples[channel] = make([]float32, length)
         }
 
-        for channel, i := 0, 0; i < length; channel, i = channel + 1, i + self.header.Channels {
+        for i := 0; i < length; i++ {
+            for channel := 0; channel < self.header.Channels; channel++ {
+                samples[channel][i] = buffer[i][channel]
+            }
         }
+
+        //perform an fft on each channel
+        for slice := range samples {
+            //fft(slice)
+        }
+
     }
     return
 }
