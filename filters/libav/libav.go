@@ -1,3 +1,7 @@
+// Copyright (c) 2010 Go Fightclub Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+
 package libavfilter
 
 
@@ -51,16 +55,16 @@ func NewLibAVSource() afp.Filter {
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
+
 	
 	parser := flags.FlagParser(args)
 	var i *string = parser.String("i", "", "The input file")
 	parser.Parse()
 	
-	if (i != nil) {
-/*		self.inFile = *i;*/
-		self.inFile = args[1];
+	if (*i != "") {
+		self.inFile = *i;
 	} else {
-		return os.NewError("Please specify an input file, good sir")
+		return os.NewError("Please specify an input file using -i")
 	}
 	
 	libav.InitDecoding()
@@ -103,7 +107,7 @@ func (self *LibAVSource) Start() {
 	self.actx.HeaderSink <- afp.StreamHeader{
 		Version : 1,
 		Channels : int8(self.streamInfo.Channels),
-		SampleSize : int8(self.streamInfo.SampleSize),
+		SampleSize : 4,
 		SampleRate : self.streamInfo.SampleRate,
 		FrameSize : self.streamInfo.FrameSize,
 		ContentLength : 0,
@@ -131,7 +135,7 @@ func (self *LibAVSource) int16ToFloat32(intSamples []int16) {
 		i int32
 		j int32
 	)
-/*println("Frame size: ", self.streamInfo.FrameSize, "len: ", len(intSamples))	*/
+
 	for i = 0; i < int32(self.streamInfo.FrameSize); i++ {
 		for j = 0; j < self.streamInfo.Channels; j++ {
 			self.floatSamples[self.currBuffer][i][j] = float32(intSamples[streamOffset]) / float32(1 << 15)
