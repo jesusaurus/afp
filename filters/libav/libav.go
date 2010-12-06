@@ -79,7 +79,6 @@ func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	
 	self.currBuffer = 0
 	
-
 	return nil
 }
 
