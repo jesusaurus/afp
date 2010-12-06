@@ -40,7 +40,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		Info:       info,
 	}
 
-	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:], ctx)
+	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][:], ctx)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
@@ -66,7 +66,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 			Info:         info,
 		}
 
-		newFilter, err := constructFilter(filterSpec[0], filterSpec[1:], ctx)
+		newFilter, err := constructFilter(filterSpec[0], filterSpec[:], ctx)
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.String())
@@ -88,7 +88,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	}
 
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec)-1][0],
-		pipelineSpec[len(pipelineSpec)-1][1:], ctx)
+		pipelineSpec[len(pipelineSpec)-1][:], ctx)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
