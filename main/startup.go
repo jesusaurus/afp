@@ -18,9 +18,13 @@ type FilterWrapper struct {
 	finished chan int
 }
 
-//Assume: every filter spec has length of at least 1
-//Potential issue: With this scheme, every pipeline must have at least 2 filters
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
+	info.Printf("%v\n", pipelineSpec)
+	if len(pipelineSpec) < 2 {
+		errors.Println("Pipeline specification must have at least a Source and Sink")
+		os.Exit(1)
+	}
+
 	var (
 		link           chan [][]float32       = make(chan [][]float32, CHAN_BUF_LEN)
 		headerLink     chan afp.StreamHeader = make(chan afp.StreamHeader, 1)
@@ -38,7 +42,6 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	}
 
 	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:], ctx)
-
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
