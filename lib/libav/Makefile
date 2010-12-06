@@ -11,8 +11,8 @@ CGO_CFLAGS=-g
 CLEANFILES+=main
 
 libavtest: install main.go
-			$(GC) main.go
-			$(LD) -o $@ main.$O
+	$(GC) main.go
+	$(LD) -o $@ main.$O
 
 include $(GOROOT)/src/Make.pkg
 
