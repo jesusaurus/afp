@@ -4,6 +4,9 @@
  *
  * provide a minimal (possibly braindead) interface into audio decoding using
  * libavformat to demux input files & libavcodec to produce PCM data
+ * 
+ * with help from http://qtdvd.com/guides/ffmpeg.html for ffmpeg .5.1 compatibility
+ * originally based on a combination of ffmpeg/tools/pktdumper.c and ffmpeg/libavcodec/api-sample.c
  *
  */
 

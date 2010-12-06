@@ -5,79 +5,113 @@
 package delay
 
 import (
-	"libav"
-	"afp/types"
+	"afp"
 	"flags"
+	"os"
 )
 
 type DelayFilter struct {
-	ctx *afp.Context
-	header *afp.StreamHeader
-	samplesPerSecond int = 44100
-	samplesPerMillisecond int = samplesPerSecond / 1000
-	delayTimeInMs int = 150
+	context *afp.Context
+	header afp.StreamHeader
+	samplesPerSecond int
+	samplesPerMillisecond int
+	delayTimeInMs int
 	extraSamples int
-	bufferSize int
-	channels int16 = 2
-	bytesPerSample int16 = 2
-	buffers [][][]float
-	frameCopy [][]float
+	bufferSize int32
+	channels int16
+	bytesPerSample int16
+	buffers [][][]float32
+	frameCopy [][]float32
 }
 
 func (self *DelayFilter) GetType() int {
-	return types.PIPE_LINK
+	return afp.PIPE_LINK
 }
 
-func Usage(args []string) os.Error {
-	msg = fmt.Sprintf(os.Stderr, "Usage of %s:\n"
-		"%s <delay per millisecond>\n", args[0], args[0])
-	return os.NewError(msg)
-}
+func (self *DelayFilter) Init(ctx *afp.Context, args []string) os.Error {
+	self.context = ctx
 
-func (self *DelayFilter) Init(ctx *types.Context, args []string) os.Error {
-	self.ctx = ctx
-	if len(vars) != 2 {
-		return Usage(args)
-	}
+	parser := flags.FlagParser(args)
+	var t *int = parser.Int("t", 125, "The delay time in milliseconds")
+/*	var w *int = parser.Int("w", 40, "The wet (delayed) signal ratio: 0 (dry) to 100 (wet)")*/
+	parser.Parse()
 	
-	self.delayTimeInMs, err := strconv.Atoui(args[1])
-	if err != nil {
-		return os.NewError("No delay specified")
-	}
-	
+	self.delayTimeInMs = *t	
 	self.extraSamples = self.delayTimeInMs * self.samplesPerMillisecond;
 
 	return nil
 }
 
 func (self *DelayFilter) Start() {
-	// Some of this will be moved to FileSource
-	self.header <-self.context.HeaderSource
-	self.initBuffers()
+	self.header = <-self.context.HeaderSource
+	self.context.HeaderSink <- self.header
 	
+	self.initBuffers()
 	self.process()
 }
 
 func (self *DelayFilter) process() {
-	var currBuffer := 0
+	var (
+		t int64 = 0
+		t1 int64 = 0
+		d float32 = 0.75
+		w float32 = 0.25
+	)
+
+	buffer := 0
+	destBuffer := self.buffers[buffer][:] 
+	
+	for audio := range(self.context.Source) {
+		self.frameCopy = audio
+		for _,sample := range(audio) {
+			if t < self.extraSamples {
+				for c,amplitude := range(sample) {
+					destBuffer[t1][c] = amplitude * d
+				}
+			} else {
+				for c,amplitude := range(sample) {
+					destBuffer[t1][c] = amplitude * d + 
+				}
+			}
+		}
+	}
+	
+	// while incoming audio available
+		// read through input frame
+		// accumulate global sample count
+		// if global sample < delayTime in samples
+			// copy dry source
+		// else
+			// mix source w/ delay
+		// if global sample count % frameSize == 0
+			// send current buffer to to Sink
+			// switch current buffer
+	// for extra samples
+		// write delay data
+		// if global sample count % frameSize == 0
+			// send current buffer to to Sink
+			// switch current buffer
+	// for frameSize % extra samples
+		// pad with zeros
 	
 	
 }
 
 func (self *DelayFilter) initBuffers() {
-	self.bufferSize = ctx.FrameSize
+	self.bufferSize = self.header.FrameSize
+	
+	/* initialize floatSamples buffer */
+	self.buffers = make([][][]float32, 2)
+	for i,_ := range(self.buffers) {
+		self.buffers[i] = make([][]float32, self.header.FrameSize)
 
-	self.buffers := make([][][]float32, 2)
-	for _,buffer := range buffers {
-		buffer := make([][]float32, ctx.FrameSize)
-
-		for _,sample := range buffer {
-			sample := make([]float32, ctx.Channels)
+		for j,_ := range(self.buffers[i]) {
+			self.buffers[i][j] = make([]float32, self.header.Channels)
 		}
 	}
 	
-	self.frameCopy := make([][]float32, ctx.FrameSize)
-	for _,sample := range frameCopy {
-		sample := make([]float32, ctx.Channels)
+	self.frameCopy = make([][]float32, self.header.FrameSize)
+	for i,_ := range self.frameCopy {
+		self.frameCopy[i] = make([]float32, self.header.Channels)
 	}
 }
