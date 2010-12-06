@@ -78,7 +78,6 @@ println("First: ", pipelineSpec[0][0])
 
 		link = nextLink
 		headerLink = nextHeaderLink
-
 	}
 
 	ctx = &afp.Context{
@@ -176,8 +175,10 @@ func RunFilter(f *FilterWrapper) {
 	}()
 
 	f.filter.Start()
+
 	if !closed(f.ctx.Sink) {
 		close(f.ctx.Sink)
 	}
+
 	f.finished <- 1
 }
