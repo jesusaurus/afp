@@ -7,7 +7,7 @@ This guide aims to provide a brief walk through of the filter
 creation process.
 
 Every filter has a type: 
-.BR Source , Link ", or " Sink
+.IR Source ", " Link ", or " Sink
 which indicates whether they pull audio into the pipeline, 
 process audio data, or dispatch audio data elsewhere.
 
@@ -15,11 +15,11 @@ Filters may be developed as stand alone executables in any language.
 They may be run using the appropriate built in 'exec' filter, and should 
 understand the format outlined in
 .BR afp-fmt (5).
-The rest of this document does not apply to these.
+The rest of this document does not apply to them.
 
-Filters may also be developed in Go and built into 
+Filters may also be developed in Go as separate packages and built into 
 .BR afp (1)
-as follows.
+as follows:
 
 .SH THE FILTER INTERFACE
 .PP
@@ -36,18 +36,19 @@ type Filter interface {
 .RS 0
 }
 
-Every filter must import the "afp" package,
+Every filter must import the "afp" package
 and implement the afp.Filter interface.  The
 purpose of each method required is as follows:
 
 .SS GetType() int
 Should return one of 
-.BR afp.PIPE_SOURCE", "afp.PIPE_LINK", or "afp.PIPE_SINK
+.BR afp.PIPE_SOURCE ", " afp.PIPE_LINK ", or " afp.PIPE_SINK
 depending on the purpose of the filter.
 
 .SS Init(*afp.Context, []string) os.Error
 Will be passed a pointer to a context object as outlined below,
 and a slice of strings holding the arguments passed to this filter.
+Argument parsing, if needed, should be done here.
 No reads/writes on the channels held in the 
 .B Context
 object should occur in Init.
@@ -56,7 +57,7 @@ Any error returned from Init will cause
 to exit immediately with the error's message
 
 .SS Start()
-This method will hold or call all audio processing routines.
+Will hold or call all audio processing routines.
 Its behavior will vary depending on the type of the filter,
 but should look something like:
 .PP
@@ -65,15 +66,15 @@ header := <-context.HeaderSource //Except in Sources
 .RS 0
 //Modify header if needed
 .RS 0
-context.HeaderSink <- modifiedHeader //Except in Sinks
+context.HeaderSink <- newHeader //Except in Sinks
 .RS 0
 
 .RS 0
 for inputAvailable {
 .RS 0
-		frame := <context.Source
+		frame := <-context.Source
 .RS 0
-		//Process
+		//Process frame
 .RS 0
 		context.Sink <- frame
 .RS 0
@@ -99,7 +100,7 @@ To avoid spinning, all channel reads and writes in Start should be blocking.
 This method will be called if some filter causes an unplanned shutdown of the 
 pipeline.  It should end processing in a sane way if possible, and return any
 errors encountered while doing so.  Errors will be displayed to the user as part 
-of the crash dump.
+of the error trace.
 
 .SH THE CONTEXT OBJECT
 .PP
@@ -131,7 +132,7 @@ pieces of the pipeline, as will as logging utilities.
 Generally, messages should be written to the Info logger only if 
 .B Verbose
 is true.  Any non-fatal errors should be reported using the Err
-logger. Fatal errors may also write to Err, but should also 
+logger. Fatal errors may cause writes to Err, but should also 
 cause a panic as outlined above.
 
 .SH THE STREAM HEADER
@@ -173,6 +174,56 @@ The number of time slices per frame.
 The length in bytes of the content which follows. If the value is unknown
 this field will be 0.		
 
+.SH THE CONSTRUCTOR METHOD
+Every filter must have an associated method which returns a usable instance.
+This method should have the signature 
+.B func() afp.Filter
+
+
+.SH REBUILDING AFP
+Filters may be built outside the afp source tree by any method,
+or copied into a subdirectory of filters dir.  In the latter case
+the afp build script will take care of building and installing 
+the filter.  The filter subdirectory should contain a makefile
+with a standard name with default target that builds the filter.
+It is also advised to include install and clean targets.
+
+.P
+In order to be included
+in the afp executable the file 
+.I /afp/source/path/main/filterlist.go
+must be modified and the executable rebuilt:
+.P
+- Add the path to the new filter package to the import block
+.P
+- Add an entry to the filterlist map for each filter defined.  The key of this map 
+will be the name of the filter on the command line.  The value must be a function
+which returns the associated filter as described above.
+.P 
+- Run the
+.I build.sh
+script found in the root of the afp source tree.
+This script will rebuild the afp libraries, filters, and finally main.  It will
+attempt to create packages in the Go package tree and may need super user
+permissions to do so.
+.P
+-
+.I Optional:
+You may wish to add a description of your filter to the 
+.BR	afp (1) 
+manpage.  To do so edit 
+.I doc/afp.man
+, set 
+.BI AFPMANDIR to the directory 
+(or some other directory in your 
+.B $MANPATH
+), and run
+.B make && make install 
+
+.SH PITFALLS
+Attempting to read from a channel in the context object in the 
+Init method will cause a deadlock.
+
 .SH AUTHORS
 Aaron Devore <adevore at cs.pdx.edu>
 .br
@@ -180,7 +231,7 @@ K. Jon Harker <kjharke at cs.pdx.edu>
 .br
 Cory Kolbeck <ckolbeck at cs.pdx.edu>
 .br
-Eric Oconnel <eoc at cs.pdx.edu>
+Eric O'Connell <eoc at cs.pdx.edu>
 .SH "SEE ALSO"
-.BR afp (3),
+.BR afp (1),
 .BR afp-fmt (5)
