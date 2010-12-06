@@ -36,7 +36,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	Err:        errors,
 	Info:       info,
 	}
-println("First: ", pipelineSpec[0][0])
+
 	src, err := constructFilter(pipelineSpec[0][0], pipelineSpec[0][1:], ctx)
 
 
@@ -51,8 +51,6 @@ println("First: ", pipelineSpec[0][0])
 	Pipeline = append(Pipeline, &FilterWrapper{src, ctx, pipelineSpec[0][0], make(chan int, 1)})
 
 	for _, filterSpec := range pipelineSpec[1 : len(pipelineSpec)-1] {
-		println("Next: ", filterSpec[0])
-
 		nextLink = make(chan [][]float32, CHAN_BUF_LEN)
 		nextHeaderLink = make(chan afp.StreamHeader, 1)
 
@@ -89,11 +87,8 @@ println("First: ", pipelineSpec[0][0])
 	Info:         info,
 	}
 
-println("Last: ", pipelineSpec[len(pipelineSpec) - 1][0])
-
 	sink, err := constructFilter(pipelineSpec[len(pipelineSpec) - 1][0],
 		pipelineSpec[len(pipelineSpec) - 1][1:], ctx)
-		
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.String())
