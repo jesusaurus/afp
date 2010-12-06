@@ -30,12 +30,22 @@ func ParsePipeline(args []string) ([]string, [][]string) {
 	currentStage := make([]string, 0, 10)
 	for _, arg := range args[pipelineStart:] {
 		if arg == "!" {
+			if len(currentStage) < 1 {
+				errors.Println("Empty pipeline stages are not allowed")
+				os.Exit(1)
+			}
+			
 			stages = append(stages, currentStage)
 			currentStage = make([]string, 0, 10)
 		} else {
 			currentStage = append(currentStage, arg)
 		}
 	}
+	if len(currentStage) < 1 {
+		errors.Println("Empty pipeline stages are not allowed")
+		os.Exit(1)
+	}
+	stages = append(stages, currentStage)
 
 	return mainArgs, stages
 }
