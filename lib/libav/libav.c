@@ -9,7 +9,6 @@
 
 
 #include "libav.h"
-#include <libavutil/intreadwrite.h>
 #include <string.h>
 
 #define MPA_DECODE_HEADER \
@@ -35,6 +34,7 @@ AVStreamInfo get_stream_info(AVDecodeContext *context);
 int is_id3_tag(AVDecodeContext *context);
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate);
 int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
+void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 /**
  * initialize all of the fun libavformat & libavdecode stuff
@@ -74,6 +74,13 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
         fprintf(stderr, "av_find_stream_info: error %d\n", err);
 		return -1;
     }
+
+	char buf[256];
+	AVStream *st = context->Fctx->streams[0];
+    
+	avcodec_string(buf, sizeof(buf), st->codec, 0);
+	fprintf(stderr, "codec string: %s", buf);
+	// dump_format(context->Fctx, 0, filename, 0);
 
 	/* initialize the AVPacket */
     av_init_packet(&context->Packet);

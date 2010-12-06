@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-PKG_NAME=null
+TARG=afp/filters/null
 GOFILES=\
 	null.go
 
