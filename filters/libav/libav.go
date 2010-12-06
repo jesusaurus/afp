@@ -51,13 +51,14 @@ func NewLibAVSource() afp.Filter {
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
-println(args[0],args[1])
+	
 	parser := flags.FlagParser(args)
 	var i *string = parser.String("i", "", "The input file")
 	parser.Parse()
-println(i, *i)
+	
 	if (i != nil) {
-		self.inFile = *i;
+/*		self.inFile = *i;*/
+		self.inFile = args[1];
 	} else {
 		return os.NewError("Please specify an input file, good sir")
 	}
@@ -107,15 +108,17 @@ func (self *LibAVSource) Start() {
 		FrameSize : self.streamInfo.FrameSize,
 		ContentLength : 0,
 	}
-	
+
 	l := int32(libav.DecodePacket(self.dctx))
 	for l > 0 {
-		numberOfSamples := l / self.streamInfo.SampleSize
+		numberOfSamples := self.streamInfo.FrameSize * self.streamInfo.Channels
 		decodedSamples := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(self.dctx.Context.Outbuf)))[:numberOfSamples]
 
 		self.int16ToFloat32(decodedSamples)
 		self.actx.Sink <- self.floatSamples[self.currBuffer]
 		self.currBuffer = 1 - self.currBuffer
+
+		l = int32(libav.DecodePacket(self.dctx))
 	}
 }
 
@@ -128,10 +131,10 @@ func (self *LibAVSource) int16ToFloat32(intSamples []int16) {
 		i int32
 		j int32
 	)
-	
-	for i = 0; i < int32(len(intSamples)); i+=self.streamInfo.Channels {
+/*println("Frame size: ", self.streamInfo.FrameSize, "len: ", len(intSamples))	*/
+	for i = 0; i < int32(self.streamInfo.FrameSize); i++ {
 		for j = 0; j < self.streamInfo.Channels; j++ {
-			self.floatSamples[self.currBuffer][i][j] = float32(intSamples[streamOffset]) / float32(1 << 31)
+			self.floatSamples[self.currBuffer][i][j] = float32(intSamples[streamOffset]) / float32(1 << 15)
 			streamOffset += 1
 		}
 	}
