@@ -44,11 +44,11 @@ func (self *NullSource) GetType() int {
 
 func (self *NullSource) Start() {
 	self.ctx.HeaderSink <- afp.StreamHeader{
-	Version : 1,
-	Channels : 1,
-	SampleSize : 0,
-	SampleRate : 0,
-	ContentLength : 0,
+		Version:       1,
+		Channels:      1,
+		SampleSize:    0,
+		SampleRate:    0,
+		ContentLength: 0,
 	}
 	close(self.ctx.Sink)
 }

@@ -39,7 +39,7 @@ func (self *MonoFilter) Start() {
 	header.Channels = 1
 	// TODO: Is this math correct? Is this guaranteed to be accurate?
 	header.ContentLength = header.ContentLength / int64(channels)
-	ctx.HeaderSink <-header
+	ctx.HeaderSink <- header
 
 	if channels == 1 { // Already mono, don't manipulate
 		for frame := range ctx.Source {
