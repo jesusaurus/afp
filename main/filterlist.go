@@ -8,6 +8,7 @@ import (
 	"afp"
 	"afp/filters/null"
 	"afp/filters/fexec"
+	"afp/filters/stdout"
 //	"./filters/delay"
 //	"./filters/fexec"
 //	"./filters/ospipe"
@@ -19,6 +20,7 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"nullsource" : null.NewNullSource,
 	"nulllink"   : null.NewNullLink,
 	"nullsink" : null.NewNullSink,
+	"stdoutsink" : stdout.NewStdoutSink,
 //	"delay"  : delay.NewFilter,
 //	"stdin"  : ospipe.StdinSource,
 //	"stdout" : ospipe.StdoutSink,
