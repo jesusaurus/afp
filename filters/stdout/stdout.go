@@ -17,8 +17,6 @@ func NewStdoutSink() afp.Filter {
 
 func (self *StdoutSink) Init(ctx *afp.Context, args []string) os.Error {
     self.context = ctx
-    self.header = <-self.context.HeaderSource
-
 	return nil
 }
 
@@ -27,30 +25,27 @@ func (self *StdoutSink) GetType() int {
 }
 
 func (self *StdoutSink) Start() {
+    self.header = <-self.context.HeaderSource
+    ibuf := make([]int16, int32(self.header.Channels) * self.header.FrameSize)
+
     for buffer := range self.context.Source { //reading a [][]float32
-        ibuf := make([]int16, int32(self.header.Channels) * self.header.FrameSize)
-        length := len(buffer)
+        length := int(self.header.FrameSize)
         chans := int(self.header.Channels)
 
-		t := 0
+		streamOffset := 0
         //interleave the channels
-        for i := 0; i < length; i += chans {
+        for i := 0; i < length; i ++ {
             for j := 0; j < chans; j++ {
-                ibuf[i+j] = int16(buffer[t][j] * 32767.0)
+                ibuf[streamOffset] = int16(buffer[i][j] * 32767.0)
+				streamOffset += 1
             }
-			t += 1
         }
 
-		binary.Write(os.Stdout, binary.LittleEndian, ibuf)
-		
-        //write some data to alsa
-/*        written := C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
-
-        if int(written) < length {
-            //not all the data was written
-            panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: ", written))
-        }
-*/    }
+		err := binary.Write(os.Stdout, binary.LittleEndian, ibuf)
+		if (err != nil) {
+			os.Stderr.WriteString(err.String())
+		}
+    }
 
     return
 }
