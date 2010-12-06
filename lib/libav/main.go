@@ -5,7 +5,7 @@
 package main;
 
 import (
-	"libav"
+	"afp/libav"
 	"unsafe"
 	"os"
 	"flag"
