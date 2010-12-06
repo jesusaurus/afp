@@ -20,9 +20,9 @@ var (
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
-	mainFlags := flags.FlagParser(mainArgs)
-	mainFlags.BoolVar(&verbose, "v", false, "verbose")
-
+	mainFlags := flags.FlagParser(mainArgs)	
+	mainFlags.BoolVar(&verbose, "v", false, "Verbose output")
+	
 	InitPipeline(pipespec, verbose)
 	StartPipeline()
 
