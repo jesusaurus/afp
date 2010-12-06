@@ -11,7 +11,7 @@ import (
 	"os"
 	)
 
-var pipespec [][]string = [][]string{{"nullsource"},{"nulllink"},{"nullsink"}}
+var pipespec [][]string = [][]string{{"libavsource","-i","/tmp/test.mp3"},{"stdoutsink"}}
 
 const CHAN_BUF_LEN = 16
 

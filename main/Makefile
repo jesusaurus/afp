@@ -4,8 +4,12 @@
 
 GV=6
 
-test:
+test: testmain.go filterlist.go startup.go
 	$(GV)g -o main.$(GV) testmain.go filterlist.go startup.go
+	$(GV)l -o ../afptest main.$(GV)
+
+afp: main.go filterlist.go startup.go
+	$(GV)g -o main.$(GV) main.go filterlist.go startup.go
 	$(GV)l -o ../afp main.$(GV)
 
 clean:

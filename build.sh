@@ -4,7 +4,7 @@ echo "####### Building Libs #######"
 cd lib
 ./build-libs
 echo "####### Building Filters ####"
-cd ../filters-src
+cd ../filters
 ./build-filters
 echo "####### Building Main ######"
 cd ../main

@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-PKG_NAME=afp/filters/fexec
+TARG=afp/filters/fexec
 GOFILES=\
 		exec.go\
 		execSource.go\
