@@ -7,28 +7,28 @@ package main
 import (
 	"afp"
 	"afp/filters/null"
-//	"afp/filters/fexec"
+	"afp/filters/fexec"
 //	"afp/filters/stdout"
-//	"afp/filters/libav"
-//  "afp/filters/alsa"
+	"afp/filters/libav"
+    "afp/filters/alsa"
 //	"./filters/delay"
 //	"./filters/ospipe"
 //	"./filters/demo"
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
-/*	"execsink"		: fexec.NewExecSink,
+	"execsink"		: fexec.NewExecSink,
 	"execlink"		: fexec.NewExecLink,
 	"execsource"	: fexec.NewExecSource,*/
 	"nullsource"	: null.NewNullSource,
 	"nulllink"		: null.NewNullLink,
 	"nullsink"		: null.NewNullSink,
-/*	"stdoutsink"	: stdout.NewStdoutSink,
+	"stdoutsink"	: stdout.NewStdoutSink,
 	"libavsource"	: libavfilter.NewLibAVSource,
     "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
 //	"delay"  : delay.NewFilter,
 //	"stdin"  : ospipe.StdinSource,
 //	"stdout" : ospipe.StdoutSink,
-//	"nop"    : demo.NopFilter,*/
+//	"nop"    : demo.NopFilter,
 }

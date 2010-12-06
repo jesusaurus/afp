@@ -79,8 +79,6 @@ for inputAvailable {
 		context.Sink <- frame
 .RS 0
 }
-.RS 0
-close(context.Sink)
 
 Note that frames should not be modified after being sent, if 
 access to multiple frames is necessary, they should be explicitly 
@@ -200,11 +198,11 @@ must be modified and the executable rebuilt:
 will be the name of the filter on the command line.  The value must be a function
 which returns the associated filter as described above.
 .P 
-- Run the
-.I build.sh
-script found in the root of the afp source tree.
-This script will rebuild the afp libraries, filters, and finally main.  It will
-attempt to create packages in the Go package tree and may need super user
+- Run 
+.I make && make install
+with environment variables as described in BUILDING.
+This script will rebuild the afp libraries, filters, and finally main. 
+This will attempt to create files in the Go package tree and may need super user
 permissions to do so.
 .P
 -
@@ -213,12 +211,7 @@ You may wish to add a description of your filter to the
 .BR	afp (1) 
 manpage.  To do so edit 
 .I doc/afp.man
-, set 
-.BI AFPMANDIR to the directory 
-(or some other directory in your 
-.B $MANPATH
-), and run
-.B make && make install 
+before running running make as described above.
 
 .SH PITFALLS
 Attempting to read from a channel in the context object in the 
