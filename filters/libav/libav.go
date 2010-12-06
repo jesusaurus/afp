@@ -4,7 +4,7 @@ package libavfilter
 import (
 	"afp"
 	"afp/flags"
-	"libav"
+	"afp/libav"
 	"os"
 	"unsafe"
 )
@@ -51,11 +51,11 @@ func NewLibAVSource() afp.Filter {
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
-
+println(args[0],args[1])
 	parser := flags.FlagParser(args)
 	var i *string = parser.String("i", "", "The input file")
 	parser.Parse()
-
+println(i, *i)
 	if (i != nil) {
 		self.inFile = *i;
 	} else {
