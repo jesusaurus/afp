@@ -53,11 +53,11 @@ func (self *ToneSource) Init(ctx *afp.Context, args []string) os.Error {
 	
 	parser := flags.FlagParser(args)
 	var toneType *string = parser.String("t", "sine", "Type of tone to generate: sine, saw, square (sine)")
-	var freq *float = parser.Float("f", 440.0, "The frequency of the tone to generate (440Hz)")
-	var amp *float = parser.Float("a", 0.75, "The amplitude of the output tone (0.75)")
-	var len *float = parser.Float("l", 10.0, "The length of the tone in seconds (10s)")
-	var channels *int = parser.Int("c", 2, "The number of channels to generate (2)")
-	var rate *int = parser.Int("r", 44100, "The sampling rate of the output (44.1khz)")
+	var freq *float = parser.Float("f", 440.0, "The frequency of the tone to generate")
+	var amp *float = parser.Float("a", 0.75, "The amplitude of the output tone")
+	var len *float = parser.Float("l", 10.0, "The length of the tone in seconds")
+	var channels *int = parser.Int("c", 2, "The number of channels to generate")
+	var rate *int = parser.Int("r", 44100, "The sampling rate of the output")
 	parser.Parse()
 	
 	dumpConfig(*toneType, *freq, *amp, *len, *channels, *rate)
