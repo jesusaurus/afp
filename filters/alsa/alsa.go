@@ -117,16 +117,18 @@ func (self *AlsaSink) Start() {
     if (retval != nil) {
         panic(retval)
     }
+    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
 
     for buffer := range self.ctx.Source { //reading a [][]float32
-        cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
-        length := len(buffer)
+        length := int(self.header.FrameSize)
         chans := int(self.header.Channels)
 
+	streamOffset := 0
         //interleave the channels
-        for i := 0; i < length; i += chans {
+        for i := 0; i < length; i ++ {
             for j := 0; j < chans; j++ {
-                cbuf[i+j] = buffer[i / chans][j]
+                cbuf[streamOffset] = buffer[i][j]
+		streamOffset++
             }
         }
 
