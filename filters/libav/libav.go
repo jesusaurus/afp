@@ -55,7 +55,6 @@ func NewLibAVSource() afp.Filter {
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
-
 	
 	parser := flags.FlagParser(args)
 	var i *string = parser.String("i", "", "The input file")
