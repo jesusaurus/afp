@@ -9,7 +9,9 @@ import (
 	"afp/filters/null"
 	"afp/filters/fexec"
 	"afp/filters/libav"
-    "afp/filters/alsa"
+	"afp/filters/stdout"
+	"afp/filters/tone"
+/*    "afp/filters/alsa"*/
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
@@ -21,6 +23,7 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"nullsink"		: null.NewNullSink,
 	"stdoutsink"	: stdout.NewStdoutSink,
 	"libavsource"	: libavfilter.NewLibAVSource,
-    "alsasource"    : alsa.NewAlsaSource,
+	"tonesource"	: tonefilter.NewToneSource,
+/*    "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
-}
+*/}
