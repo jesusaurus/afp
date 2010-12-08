@@ -18,25 +18,36 @@ import (
 
 type FFTPlan32 struct {
 	plan C.fftwf_plan
+	valid bool
 }
 
+func (self *FFTPlan32) Execute() {
+	if !self.valid {
+		panic("Attempt to use destroyed FFT plan.")
+	}
+	C.fftwf_execute(self.plan)
+}
+
+func (self *FFTPlan32) Destroy() {
+	self.valid = false
+	C.fftwf_destroy_plan(self.plan)
+}
 func NewRealToComplexPlan_1D_32(data []float32, output []complex64, flags int) *FFTPlan32 {
 	return &FFTPlan32{C.fftwf_plan_dft_r2c_1d(C.int(len(data)), (*C.float)(&data[0]), 
 		(*C.fftwf_complex)(unsafe.Pointer(&output[0])),
-			C.uint(C.FFTW_UNALIGNED | flags))}
+			C.uint(C.FFTW_UNALIGNED | flags)), true}
 }
 
 func NewRealToRealPlan_1D_32(data, output []float32, flags int, kind C.fftwf_r2r_kind) *FFTPlan32 {
 
 	return &FFTPlan32{C.fftwf_plan_r2r_1d(C.int(len(data)), (*C.float)(&data[0]),
-			           (*C.float)(&output[0]), kind, C.uint(C.FFTW_UNALIGNED | flags))}
+			           (*C.float)(&output[0]), kind, C.uint(C.FFTW_UNALIGNED | flags)), true}
 }
 
-func (self *FFTPlan32) Execute() {
-	C.fftwf_execute(self.plan)
-}
 /*
-     fftw_plan fftw_plan_r2r_2d(int n0, int n1, double *in, double *out,
-                                fftw_r2r_kind kind0, fftw_r2r_kind kind1,
-    unsigned flags)
+func NewRealToRealPlan_2D_32(data, output []float32, flags int, kind C.fftwf_r2r_kind) *FFTPlan32 {
+     
+	fftwf_plan_r2r_2d(int n0, int n1, double *in, double *out,
+        fftw_r2r_kind kind0, fftw_r2r_kind kind1,unsigned flags)
+}
 */
