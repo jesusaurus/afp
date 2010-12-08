@@ -20,7 +20,7 @@ type execFilter struct {
 	header *afp.StreamHeader
 	endianness binary.ByteOrder
 	commErrors chan os.Error
-	finished chan int	
+	finished chan int
 }
 
 func (self *execFilter) Stop() os.Error {
@@ -47,8 +47,7 @@ func (self *execFilter) Init(ctx *afp.Context, args []string) os.Error {
 
 	self.context = ctx
 	self.commErrors = make(chan os.Error)
-	self.finished = make(chan int) 
-
+	self.finished = make(chan int)
 	return nil
 }
 
@@ -63,15 +62,13 @@ func (self *execFilter) write(v interface{}) {
 func (self *execFilter) encoder() {
 	defer self.filter.Close()
 
-	self.write(self.header.HeaderLength)
+	self.write(afp.HEADER_LENGTH)
 	self.write(self.header.Version)
 	self.write(self.header.Channels)
 	self.write(self.header.SampleSize)
 	self.write(self.header.SampleRate)
 	self.write(self.header.FrameSize)
 	self.write(self.header.ContentLength)
-	self.write(self.header.OtherLength)
-	self.write(self.header.Other)
 
 	for frame := range self.context.Source {
 		for _, slice := range frame {
@@ -91,24 +88,26 @@ func (self *execFilter) read(v interface{}) {
 func (self *execFilter) decoder() {
 	OutHeader := afp.StreamHeader{}
 
-	self.read(&OutHeader.HeaderLength)
+	var length int32
+
+	self.read(&length)
+	if length != afp.HEADER_LENGTH {
+		self.commErrors <- os.NewError("Header not the right length")
+		select{}
+	}
 	self.read(&OutHeader.Version)
 	self.read(&OutHeader.Channels)
 	self.read(&OutHeader.SampleSize)
 	self.read(&OutHeader.SampleRate)
 	self.read(&OutHeader.FrameSize)
 	self.read(&OutHeader.ContentLength)
-	self.read(&OutHeader.OtherLength)
-
-	OutHeader.Other = make([]byte, OutHeader.OtherLength)
-	self.read(OutHeader.Other)
 
 	self.context.HeaderSink <- OutHeader
 
 	frame := make([][]float32, OutHeader.FrameSize)
-	
+
 	chans := int32(OutHeader.Channels)
-	
+
 	for {
 		rawFrame := make([]float32, chans * OutHeader.FrameSize)
 		self.read(rawFrame)
