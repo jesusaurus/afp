@@ -5,7 +5,8 @@
 include $(GOROOT)/src/Make.inc
 
 TARG=afp/fftw
-CGOFILES=fftw.go
+CGOFILES=fftw.go\
+		constants.go
 CGO_LDFLAGS=-lfftw -lfftwf -lm
 CGO_CFLAGS=-g
 #CLEANFILES+=main
