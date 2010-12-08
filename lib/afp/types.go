@@ -17,15 +17,12 @@ const (
 )
 
 type StreamHeader struct {
-	HeaderLength  int32
 	Version       int8
 	Channels      int8
 	SampleSize    int8
 	SampleRate    int32
 	FrameSize     int32
 	ContentLength int64
-	OtherLength   int32
-	Other         []byte
 }
 
 type Context struct {
