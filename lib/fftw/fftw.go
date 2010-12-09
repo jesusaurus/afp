@@ -16,7 +16,19 @@ import (
 	"unsafe"
 	)
 
-type FFTPlan32 struct {
+type fft_plan struct {
+	plan C.fftwf_plan
+	valid bool
+}
+
+type FFTPlan_r2r_1d_32 struct {
+	InBuff []float32
+	OutBuff []float32
+}
+
+type FFTPlan_r2c_1d_32 struct {
+	InBuff []float32
+	OutBuff []complex64
 	plan C.fftwf_plan
 	valid bool
 }
