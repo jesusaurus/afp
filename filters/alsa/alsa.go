@@ -1,6 +1,4 @@
 // Copyright (c) 2010 Go Fightclub Authors
-// This source code is released under the terms of the
-// MIT license. Please see the file LICENSE for license details.
 
 package alsa
 
@@ -126,12 +124,13 @@ func (self *AlsaSink) Start() {
     var cbuf []float32 //C buffer
     var written chan C.snd_pcm_sframes_t
     chans := int(self.header.Channels)
-    double := <-self.ctx.Source //blocking call, reading a [][]float32
+    double := make([][]float32, 0, self.header.FrameSize * 1024)
+    double = append(double, <-self.ctx.Source...)
     length := len(double)
     oldLength := length
     written <- C.snd_pcm_sframes_t(length)
 
-    for buffer := range self.ctx.Source { //also blocking
+    for buffer := range self.ctx.Source { //blocking
 
         select {
 
@@ -152,7 +151,7 @@ func (self *AlsaSink) Start() {
             double = buffer
 
         default:
-            double = append(buffer, <-self.ctx.Source)
+            double = append(buffer, <-self.ctx.Source...)
             length = len(double)
 
             //cbuf WILL be a new pointer, so we can gaurantee that the address space given to snd_pcm_writei
