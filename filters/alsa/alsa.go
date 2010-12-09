@@ -176,6 +176,7 @@ func (self *AlsaSink) Start() {
 }
 
 func (self *AlsaSink) Stop() os.Error {
+    close(self.ctx.Source)
     C.snd_pcm_close(self.playback)
     return nil
 }
