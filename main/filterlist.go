@@ -11,7 +11,7 @@ import (
 	"afp/filters/libav"
 	"afp/filters/stdout"
 	"afp/filters/tone"
-/*    "afp/filters/alsa"*/
+    "afp/filters/alsa"
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
@@ -24,6 +24,6 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"stdoutsink"	: stdout.NewStdoutSink,
 	"libavsource"	: libavfilter.NewLibAVSource,
 	"tonesource"	: tonefilter.NewToneSource,
-/*    "alsasource"    : alsa.NewAlsaSource,
+    "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
-*/}
+}
