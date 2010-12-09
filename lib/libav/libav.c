@@ -142,8 +142,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 		}
 	// FIXME
 
-	// context->Info.Channels = context->Cctx->channels;
-	// context->Info.Sample_rate = context->Cctx->sample_rate;
+#ifdef AVCORE_SAMPLEFMT_H
 	switch(context->Cctx->sample_fmt) {
 	    case AV_SAMPLE_FMT_U8:          ///< unsigned 8 bits
 			sample_size = 1;
@@ -158,6 +157,9 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 			fprintf(stderr, "Unsupported sample format: %d\n", context->Cctx->sample_fmt);
 			return -1;
 	}
+#else
+	sample_size = 2;
+#endif
 	context->Info.Sample_size = sample_size;
 
 	context->first_frame_used = 0;
