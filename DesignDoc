@@ -1,0 +1,47 @@
+Working Title: afp - Audio Filter Pipeline
+
+A utility for audio manipulation in Linux
+
+High Level:
+
+We will implement an audio processing utility as a collection of modular
+   sources, sinks, and filters.  The goal is twofold: provide ease of 
+   pipeline specification, and allow third party modules to be used with 
+   or in an existing install with minimal hassle.
+
+We will provide a common format and interface through which modules can
+   communicate.
+
+
+Lower Level:
+
+The interface by which modules communicate with the outside 
+	world will consist of: 
+	
+A source
+A sink
+The incoming header
+Some means of passing an outgoing (possibly modified) header
+
+
+Details:
+	
+We will implement the above in Go, using the ffmpeg libraries 
+   for encoding and decoding media. 
+
+Each builtin filter will run in a separate goroutine and communicate
+	through go channels
+
+External filters will run as separate processes and communicate
+	over operating system pipes.
+
+Invocation and pipeline specification will be through a single
+	executable.
+
+Pipeline specification will use a simplified version of bash pipe syntax
+	using '!' as a standing for '|'. For example:
+ 
+	afp source -f test.flac ! resample -t 44100 ! play -d /dev/dsp
+
+	Would create a three module linear pipeline which read from a flac
+	file, resample, then play the result through /dev/dsp
