@@ -16,6 +16,7 @@ import (
 	"unsafe"
 	)
 
+
 //A note regarding the somewhat ugly cast from complex64 -> fftwf_complex
 //fftwf_complex is a float[2], which has the same memory layout as Go's complex64
 //The may seem brittle, but it's a standard leyout for complex numbers, and unlikely
@@ -31,6 +32,7 @@ func RealToComplex1D_32(data []float32, iterations, flags int) []complex64 {
 		C.fftwf_execute(plan)
 	}
 
+	C.fftwf_destroy_plan(plan)
 	return output
 }
 
@@ -48,11 +50,47 @@ func RealToReal1D_32(data []float32, inPlace bool, iterations, flags int, kind C
 		C.fftwf_execute(plan)
 	}
 
+	C.fftwf_destroy_plan(plan)
 	return
-
 }
-/*
-     fftw_plan fftw_plan_r2r_2d(int n0, int n1, double *in, double *out,
-                                fftw_r2r_kind kind0, fftw_r2r_kind kind1,
-    unsigned flags)
-*/
+
+func RealToReal2D_32(data [][]float32, iterations, flags int, 
+	kind0 C.fftwf_r2r_kind, kind1 C.fftwf_r2r_kind) (out [][]float32) {
+
+	//fftw expects a 2d array in row major order.
+	//We have no guarantees about the memory layout 
+	//of any frame, so we have to copy and flatten
+	flattenedData := make([]float32, len(data) * len(data[0]))
+	
+	p := 0
+	for i := range data {
+		for j := range data[i] {
+			flattenedData[p] = data[i][j]
+			p++
+		}
+	}
+
+	flattenedOut := make([]float32, len(data) * len(data[0]))
+	
+	plan :=  C.fftwf_plan_r2r_2d(C.int(len(data)), C.int(len(data[0])), 
+		(*C.float)(&flattenedData[0]), (*C.float)(&flattenedOut[0]),
+		kind0, kind1, C.uint(C.FFTW_UNALIGNED | flags))
+
+	for i := 0; i < iterations; i++ {
+		C.fftwf_execute(plan)
+	}
+
+
+	//Slice the flattened array for return to user
+	out = make([][]float32, len(data))
+
+	sampleLen := len(data[0])
+	slice := 0
+	for i := range out {
+		out[i] = flattenedOut[slice:slice + sampleLen]
+		slice += sampleLen
+	} 
+
+	C.fftwf_destroy_plan(plan)
+	return
+}
