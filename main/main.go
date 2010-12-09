@@ -7,6 +7,7 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 	"afp/flags"
 )
 
@@ -19,6 +20,10 @@ var (
 	verbose  bool
 	specFile string
 )
+
+func Init() {
+	go SigHandler()
+}
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
@@ -43,6 +48,22 @@ func main() {
 		<-filter.finished
 		if verbose {
 			info.Printf("Filter '%s' finished", filter.name)
+		}
+	}
+}
+
+func SigHandler() {
+	for sig := range signal.Incoming {
+		usig, ok := sig.(signal.UnixSignal)
+
+		if !ok {
+			shutdown()
+			errors.Printf("Process received unknown signal: %s" + sig.String())
+			os.Exit(1)
+		}
+
+		switch usig {
+			
 		}
 	}
 }
