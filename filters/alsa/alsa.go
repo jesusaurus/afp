@@ -111,34 +111,64 @@ func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func (self *AlsaSink) Start() {
+
+    const FRAMES int = 256 //the double buffer holds 256 frames
     self.header = <-self.ctx.HeaderSource
 
     retval := self.prepare()
     if (retval != nil) {
         panic(retval)
     }
-    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
 
-    for buffer := range self.ctx.Source { //reading a [][]float32
-        length := int(self.header.FrameSize)
-        chans := int(self.header.Channels)
+    //almost a do..while
+    var cbuf []float32 //C buffer
+    var written chan C.snd_pcm_sframes_t
+    chans := int(self.header.Channels)
+    double := <-self.ctx.Source //blocking call, reading a [][]float32
+    length := len(double)
+    oldLength := length
+    written <- C.snd_pcm_sframes_t(length)
 
-	streamOffset := 0
-        //interleave the channels
-        for i := 0; i < length; i ++ {
-            for j := 0; j < chans; j++ {
-                cbuf[streamOffset] = buffer[i][j]
-		streamOffset++
+    for buffer := range self.ctx.Source { //also blocking
+
+        select {
+
+        //wait for the previous write to finish
+        case error := <-written:
+
+            if int(error) < oldLength {
+                //not all the data was written to the device
+                panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: ", written))
             }
-        }
 
-        //write some data to alsa
-        written := C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
+            //write to the speaker in another thread
+            go func() {
+                oldLength = length
+                written <- C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
+            }()
 
-        if int(written) < length {
-            //not all the data was written
-            panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: ", written))
-        }
+            double = buffer
+
+        default:
+            double = append(buffer, <-self.ctx.Source)
+            length = len(double)
+
+            //cbuf WILL be a new pointer, so we can gaurantee that the address space given to snd_pcm_writei
+            //will not be modified once it is passed; but on the down side, we rely on the garbage collector
+            //to take care of many stale slices created while filling our buffer
+            cbuf = make([]float32, int32(self.header.Channels) * self.header.FrameSize * int32(length))
+
+            //interleave the channels
+            streamOffset := 0
+            for i := 0; i < length; i++ {
+                for j := 0; j < chans; j++ {
+                    cbuf[streamOffset] = double[i][j]
+                    streamOffset++
+                }
+            }
+
+        }//end select
+
     }
 
     return
