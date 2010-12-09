@@ -13,3 +13,6 @@ CGO_CFLAGS=-g
 
 include $(GOROOT)/src/Make.pkg
 
+bench:
+	$(GC) bench_fftw.go
+	$(LD) -o bench_fftw bench_fftw.$(O)
