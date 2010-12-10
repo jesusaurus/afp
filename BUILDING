@@ -8,7 +8,7 @@ Dependencies:
   - libportaudio2.0 (On debian systems `apt-get install libportaudio-dev libportaudio2`) 
   - alsa development files (On debian systems `apt-get install libasound2-dev`)
   - fftw3 libs and development files (On debian systems `apt-get install libfftw3-dev libfftw3-3`)
-  
+  - libz-dev, libbz2-dev  
 
 Building:
   From the root of the afp source tree, issue `make`.
