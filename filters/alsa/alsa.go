@@ -122,7 +122,7 @@ func (self *AlsaSink) Start() {
 
     //almost a do..while
     var cbuf []float32 //C buffer
-    var written chan C.snd_pcm_sframes_t
+    var written chan C.snd_pcm_sframes_t = make(chan C.snd_pcm_sframes_t)
     chans := int(self.header.Channels)
     double := make([][]float32, 0, self.header.FrameSize * 1024)
     double = append(double, <-self.ctx.Source...)
