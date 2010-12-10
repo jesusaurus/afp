@@ -11,7 +11,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
-#include <portaudio.h>
+#include "portaudio.h"
 
 #define PROTECT(x) if((x) < 0) { perror(#x); return -1; }
 #define LOCK(x) if((pthread_mutex_lock(x)) < 0) { perror(#x); return -1; }
@@ -85,6 +85,7 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 	int locked = data->fill_index;
 	
 	if (done != 0) {
+		fprintf(stderr, "Oh look, we're done\n");
 		data->stopped = 1;
 		
 		err = Pa_StopStream( data->stream );
@@ -93,6 +94,8 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 		    fprintf( stderr, "Error number: %d\n", err );
 		    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
 		}
+
+		fprintf(stderr, "Pa_StopStream done\n");
 	}
 
 	// fprintf(stderr, "LOCKING fill: %d\n", locked);
@@ -202,6 +205,7 @@ int close_portaudio(pa_output_data *data) {
 	    fprintf( stderr, "Error number: %d\n", err );
 	    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
 	}
+    fprintf( stderr, "Pa_CloseStream'ed\n" );
 
 	for (i = 0; i < BUFFERS; i++) {
 		PROTECT(pthread_mutex_destroy(&data->reading[i]));
@@ -211,5 +215,6 @@ int close_portaudio(pa_output_data *data) {
 	free(data->buffers);
 
     Pa_Terminate();
+    fprintf( stderr, "Pa_Terminate'ed\n" );
 	return err;
 }

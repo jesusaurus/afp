@@ -66,8 +66,10 @@ func (self *PASink) Start() {
     }
 
 	// terminate the stream 
+	os.Stderr.WriteString("Terminating Stream..")
 	C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 1)
 	C.close_portaudio(&self.output_data)
+	os.Stderr.WriteString("Stream Terminated..")
 
     return
 }
