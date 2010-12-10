@@ -15,6 +15,9 @@ const CHAN_BUF_LEN = 16
 
 var (
 	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
+	pipelineLock *sync.Mutex = &sync.Mutex{}
+
+
 	errors   *log.Logger      = log.New(os.Stderr, "[E] ", log.Ltime)
 	info     *log.Logger      = log.New(os.Stderr, "[I] ", log.Ltime)
 	verbose  bool
@@ -52,6 +55,7 @@ func main() {
 	}
 }
 
+//
 func SigHandler() {
 	for sig := range signal.Incoming {
 		usig, ok := sig.(signal.UnixSignal)
@@ -63,7 +67,15 @@ func SigHandler() {
 		}
 
 		switch usig {
-			
+		case syscall.SIGABRT, syscall.SIGFPE,  syscall.SIGILL, 
+			 syscall.SIGINT,  syscall.SIGKILL, syscall.SIGQUIT, 
+			 syscall.SIGSEGV, syscall.SIGSTOP, syscall.SIGTERM,
+		     syscall.SIGTSTP :
+			errors.Printf("Received signal: %v. Pipeline will terminate.", usig)
+			shutdown()
+			os.Exit(1)
 		}
 	}
 }
+
+(replace-regexp "^\\([A-Z]+\\).*" "case syscall.\\1 :")
