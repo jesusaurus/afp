@@ -3,7 +3,9 @@
 #MIT license. Please see the file LICENSE for license details.
 
 ifeq ($(AFPMANDIR),)
-$(error $$AFPMANDIR is not set, manpages will not be installed.)
+echo "$$AFPMANDIR is not set, manpages will be installed to ~/.man"
+-mkdir ~/.man 2> /dev/null
+AFPMANDIR=~/.man
 endif
 
 install: 
