@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"afp/flags"
+	"sync"
+	"syscall"
 )
 
 const CHAN_BUF_LEN = 16

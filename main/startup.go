@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"afp"
-	"sync"
 )
 
 type FilterWrapper struct {

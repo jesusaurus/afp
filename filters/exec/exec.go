@@ -6,7 +6,6 @@ package fexec
 
 import (
 	"afp"
-	//"afp/flags"
 	"os"
 	"exec"
 	"encoding/binary"
@@ -44,7 +43,8 @@ func (self *execFilter) Init(ctx *afp.Context, args []string) os.Error {
 	if err != nil {
 		return err
 	}
-
+	
+	self.endianness = binary.LittleEndian //Move this to a flag in the future 
 	self.context = ctx
 	self.commErrors = make(chan os.Error)
 	self.finished = make(chan int)
@@ -54,6 +54,10 @@ func (self *execFilter) Init(ctx *afp.Context, args []string) os.Error {
 func (self *execFilter) write(v interface{}) {
 	err := binary.Write(self.filter.Stdin, self.endianness, v)
 	if err != nil {
+		//On a write error, pass the error back to the calling thread
+		//Then block permanently.
+		//The afp infrastructure will receive the error and shutdown
+		//The pipeline, killing the cmd in the process.
 		self.commErrors <- err
 		select{}
 	}
