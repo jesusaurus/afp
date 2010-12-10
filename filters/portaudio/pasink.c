@@ -10,7 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 #include <portaudio.h>
+
+#define PROTECT(x) if((x) < 0) { perror(#x); return -1; }
+#define LOCK(x) if((pthread_mutex_lock(x)) < 0) { perror(#x); return -1; }
+#define UNLOCK(x) if((pthread_mutex_unlock(x)) < 0) { perror(#x); return -1; }
 
 #define BUFFERS 4
 
@@ -18,6 +23,7 @@
 typedef struct {
 	PaStream *stream;
 	float **buffers;
+	pthread_mutex_t queueing, writing, reading;
 	int dirty[BUFFERS];
 	int buffer_index;
 	int fill_index;
@@ -50,23 +56,19 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
 	(void) statusFlags;
 	(void) inputBuffer;
 	
-	fprintf(stderr, "Playing buffer %d, dirty: %d\n", data->buffer_index, data->dirty[data->buffer_index]);
-	
-	/* wait loop .. how to avoid this? */
-	while (data->dirty[data->buffer_index] == 0 && data->stopped == 0)
-		;
+	while (1) {
+		LOCK(&data->queueing);
+		if (data->dirty[data->buffer_index] == 1 && data->stopped == 0)
+			break;
+		UNLOCK(&data->queueing);
+	}
+	UNLOCK(&data->queueing);
 
 	memcpy(out, data->buffers[data->buffer_index], data->buffer_size * sizeof(float));
-	// for( i=0; i < data->buffer_size; i++ )
-	// {
-	// 	*out++ = data->buffers[data->buffer_index][i];
-	// }
 
 	/* this buffer is no longer dirty */
 	data->dirty[data->buffer_index] = 0;
 	data->buffer_index = (data->buffer_index + 1) % BUFFERS;
-
-	fprintf(stderr, "next up buffer %d, dirty: %d\n", data->buffer_index, data->dirty[data->buffer_index]);
 
 	return paContinue;
 }
@@ -79,6 +81,7 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 	
 	if (done != 0) {
 		data->stopped = 1;
+		
 		err = Pa_StopStream( data->stream );
 		if (err != 0) {
 			fprintf(stderr, "Error with Pa_StopStream\n");
@@ -87,18 +90,19 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 		}
 	}
 
-	fprintf(stderr, "Filling buffer %d, dirty: %d started: %d\n", data->fill_index, data->dirty[data->fill_index], data->started);
-
-	
-	// /* don't overwrite unplayed data */
-	while (data->dirty[data->fill_index] == 1 && data->started == 1)
-		;
+	while (1) {
+		LOCK(&data->queueing);
+		if (data->dirty[data->buffer_index] == 0 || data->started == 0) {
+			break;
+		}
+		UNLOCK(&data->queueing);
+	}
+	UNLOCK(&data->queueing);
 	
 	/* copy data into the output buffer */
 	memcpy((void *)data->buffers[data->fill_index], (const void *)interleaved_float_samples, (size_t)(data->buffer_size * sizeof(float)));
 	data->dirty[data->fill_index] = 1;
 	data->fill_index = (data->fill_index + 1) % BUFFERS;
-
 
 	/* start playing once we've filled all the BUFFERS */
 	if (data->fill_index == 0 && data->started == 0) {
@@ -114,8 +118,6 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 		return err;
 	}
 	
-	fprintf(stderr, "Next to fill buffer %d, dirty: %d\n", data->fill_index, data->dirty[data->fill_index]);
-	
 	return 0;
 }
 
@@ -127,6 +129,10 @@ int init_portaudio_output(int channels, int sample_rate, int frame_size, pa_outp
 	PaStreamParameters outputParameters;
 	PaError err;
 	int i;
+	
+	PROTECT(pthread_mutex_init(&data->queueing, NULL))
+	PROTECT(pthread_mutex_init(&data->reading, NULL))
+	PROTECT(pthread_mutex_init(&data->writing, NULL))
 	
 	if ((data->buffers = (float**)malloc(BUFFERS)) < 0) {
 		fprintf(stderr,"Error: Not enough memory");
@@ -186,12 +192,23 @@ error:
  * close down portaudio
  */
 int close_portaudio(pa_output_data *data) {
+	int i;
+	
 	PaError err = Pa_CloseStream( data->stream );
     if( err != paNoError ) {
 	    fprintf( stderr, "An error occured while using the portaudio stream\n" );
 	    fprintf( stderr, "Error number: %d\n", err );
 	    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
 	}
+
+	PROTECT(pthread_mutex_destroy(&data->queueing));
+	PROTECT(pthread_mutex_destroy(&data->reading));
+	PROTECT(pthread_mutex_destroy(&data->writing));
+	
+	for (i = 0; i < BUFFERS; i++) {
+		free(data->buffers[i]);
+	}
+	free(data->buffers);
 
     Pa_Terminate();
 	return err;
