@@ -57,7 +57,6 @@ func main() {
 	}
 }
 
-//
 func SigHandler() {
 	for sig := range signal.Incoming {
 		usig, ok := sig.(signal.UnixSignal)
