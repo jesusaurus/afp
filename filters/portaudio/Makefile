@@ -7,4 +7,4 @@ CGO_LDFLAGS=-lportaudio -lpthread
 
 include $(GOROOT)/src/Make.pkg
 
-CLEANFILES+=portaudio $(PKGDIR)/$(TARG).a
+CLEANFILES+=portaudio $(pkgdir)/$(TARG).a
