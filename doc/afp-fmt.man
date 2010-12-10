@@ -1,0 +1,75 @@
+.ll 60n	
+.TH AFP-FMT 5 "DECEMBER 2010" PSU "User Manuals"
+.SH NAME 
+afp-fmt \- audio format used by afp internally
+.SH OVERVIEW
+.PP
+.RS 0
+bytes             Meaning
+.RS 0
+  _____________
+.RS 0
+1|_____________| Header Version Number
+.RS 0
+1|_____________| Audio Channels
+.RS 0
+1|_____________| Sample Size
+.RS 0
+4|             | Sample Rate
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |_____________|
+.RS 0
+4|             | Frame Size
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |_____________|
+.RS 0
+8|             | Content Length
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |             |
+.RS 0
+ |_____________|
+.RS 0
+?|      .      | Content - Interleaved Linear PCM
+.RS 0
+        .       
+.RS 0
+ |      .      |
+.RS 0
+ |_____________|
+.RS 0
+.SH DETAILS
+Internally, afp divides the stream into a header followed by some number of frames.
+Each frame contains
+.B "Frame Size" 
+Samples.  Each sample contains
+.B "Audio Channels"
+32 bit IEEE floating point numbers with values between -1 and 1 inclusive.
+.SH AUTHORS
+Aaron Devore <adevore at cs.pdx.edu>
+.br
+K. Jon Harker <kjharke at cs.pdx.edu>
+.br
+Cory Kolbeck <ckolbeck at cs.pdx.edu>
+.br
+Eric O'Connell <eoc at cs.pdx.edu>
+.SH "SEE ALSO"
+.BR afp-dev (8),
+.BR afp (1)
