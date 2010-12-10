@@ -7,6 +7,7 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 	"afp/flags"
 )
 
@@ -14,11 +15,18 @@ const CHAN_BUF_LEN = 16
 
 var (
 	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
+	pipelineLock *sync.Mutex = &sync.Mutex{}
+
+
 	errors   *log.Logger      = log.New(os.Stderr, "[E] ", log.Ltime)
 	info     *log.Logger      = log.New(os.Stderr, "[I] ", log.Ltime)
 	verbose  bool
 	specFile string
 )
+
+func Init() {
+	go SigHandler()
+}
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
@@ -43,6 +51,29 @@ func main() {
 		<-filter.finished
 		if verbose {
 			info.Printf("Filter '%s' finished", filter.name)
+		}
+	}
+}
+
+//
+func SigHandler() {
+	for sig := range signal.Incoming {
+		usig, ok := sig.(signal.UnixSignal)
+
+		if !ok {
+			shutdown()
+			errors.Printf("Process received unknown signal: %s" + sig.String())
+			os.Exit(1)
+		}
+
+		switch usig {
+		case syscall.SIGABRT, syscall.SIGFPE,  syscall.SIGILL, 
+			 syscall.SIGINT,  syscall.SIGKILL, syscall.SIGQUIT, 
+			 syscall.SIGSEGV, syscall.SIGSTOP, syscall.SIGTERM,
+		     syscall.SIGTSTP :
+			errors.Printf("Received signal: %v. Pipeline will terminate.", usig)
+			shutdown()
+			os.Exit(1)
 		}
 	}
 }
