@@ -26,6 +26,6 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"libavsource"	: libavfilter.NewLibAVSource,
 	"tonesource"	: tonefilter.NewToneSource,
 	"pasink"		: portaudio.NewPASink,
-/*    "alsasource"    : alsa.NewAlsaSource,
+    "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
-*/}
+}
