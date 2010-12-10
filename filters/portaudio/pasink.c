@@ -23,7 +23,8 @@
 typedef struct {
 	PaStream *stream;
 	float **buffers;
-	pthread_mutex_t queueing, writing, reading;
+	pthread_mutex_t reading[BUFFERS];
+	pthread_mutex_t writing[BUFFERS];
 	int dirty[BUFFERS];
 	int buffer_index;
 	int fill_index;
@@ -51,24 +52,27 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
 	                            void *userData ) {
 	pa_output_data *data = (pa_output_data*)userData;
 	float *out = (float*)outputBuffer;
+	int locked = data->buffer_index;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
 	(void) statusFlags;
 	(void) inputBuffer;
 	
-	while (1) {
-		LOCK(&data->queueing);
-		if (data->dirty[data->buffer_index] == 1 && data->stopped == 0)
-			break;
-		UNLOCK(&data->queueing);
-	}
-	UNLOCK(&data->queueing);
+	// fprintf(stderr, "LOCKING play: %d\n", locked);
+	LOCK(&data->reading[locked]);
+	// fprintf(stderr, "LOCKED play: %d\n", locked);
 
 	memcpy(out, data->buffers[data->buffer_index], data->buffer_size * sizeof(float));
 
 	/* this buffer is no longer dirty */
 	data->dirty[data->buffer_index] = 0;
 	data->buffer_index = (data->buffer_index + 1) % BUFFERS;
+
+	// fprintf(stderr, "UNLOCKING play: %d\n", locked);
+	UNLOCK(&data->reading[locked]);
+	UNLOCK(&data->writing[locked]);
+	
+	// fprintf(stderr, "UNLOCKED play: %d\n", locked);
 
 	return paContinue;
 }
@@ -77,7 +81,8 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
  * send pasink output data
  */
 int send_output_data(float *interleaved_float_samples, pa_output_data *data, int done) {
-	PaError err;
+	PaError err = 0;
+	int locked = data->fill_index;
 	
 	if (done != 0) {
 		data->stopped = 1;
@@ -90,14 +95,10 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 		}
 	}
 
-	while (1) {
-		LOCK(&data->queueing);
-		if (data->dirty[data->buffer_index] == 0 || data->started == 0) {
-			break;
-		}
-		UNLOCK(&data->queueing);
-	}
-	UNLOCK(&data->queueing);
+	// fprintf(stderr, "LOCKING fill: %d\n", locked);
+	LOCK(&data->writing[locked]);
+	LOCK(&data->reading[locked]);
+	// fprintf(stderr, "LOCKED fill: %d\n", locked);
 	
 	/* copy data into the output buffer */
 	memcpy((void *)data->buffers[data->fill_index], (const void *)interleaved_float_samples, (size_t)(data->buffer_size * sizeof(float)));
@@ -115,10 +116,13 @@ int send_output_data(float *interleaved_float_samples, pa_output_data *data, int
 			fprintf(stderr, "Starting stream\n");
 			data->started = 1;
 		}
-		return err;
 	}
 	
-	return 0;
+	// fprintf(stderr, "UNLOCKING fill: %d\n", locked);
+	UNLOCK(&data->reading[locked]);
+	// fprintf(stderr, "UNLOCKED fill: %d\n", locked);
+
+	return err;
 }
 
 /**
@@ -129,10 +133,6 @@ int init_portaudio_output(int channels, int sample_rate, int frame_size, pa_outp
 	PaStreamParameters outputParameters;
 	PaError err;
 	int i;
-	
-	PROTECT(pthread_mutex_init(&data->queueing, NULL))
-	PROTECT(pthread_mutex_init(&data->reading, NULL))
-	PROTECT(pthread_mutex_init(&data->writing, NULL))
 	
 	if ((data->buffers = (float**)malloc(BUFFERS)) < 0) {
 		fprintf(stderr,"Error: Not enough memory");
@@ -145,6 +145,8 @@ int init_portaudio_output(int channels, int sample_rate, int frame_size, pa_outp
 			return errno;
 		}
 		data->dirty[i] = 0;
+		PROTECT(pthread_mutex_init(&data->reading[i], NULL));
+		PROTECT(pthread_mutex_init(&data->writing[i], NULL));
 	}
 	
 	data->started = 0;
@@ -201,11 +203,9 @@ int close_portaudio(pa_output_data *data) {
 	    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
 	}
 
-	PROTECT(pthread_mutex_destroy(&data->queueing));
-	PROTECT(pthread_mutex_destroy(&data->reading));
-	PROTECT(pthread_mutex_destroy(&data->writing));
-	
 	for (i = 0; i < BUFFERS; i++) {
+		PROTECT(pthread_mutex_destroy(&data->reading[i]));
+		PROTECT(pthread_mutex_destroy(&data->writing[i]));
 		free(data->buffers[i]);
 	}
 	free(data->buffers);
