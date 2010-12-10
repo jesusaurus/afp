@@ -22,13 +22,16 @@
 /* context struct for buffering output audio, passed to context */
 typedef struct {
 	PaStream *stream;
+
 	float **buffers;
+	int read_index;
+	int write_index;
+
 	pthread_mutex_t reading[BUFFERS];
 	pthread_mutex_t writing[BUFFERS];
-	int dirty[BUFFERS];
-	int buffer_index;
-	int fill_index;
+
 	int buffer_size;
+
 	int started;
 	int stopped;
 } pa_output_data;
@@ -43,7 +46,6 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
 
 /**
  * send the float data into the output buffer provided by pa_audio
- * TODO: just call memcpy()
  */
 static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
 	                            unsigned long framesPerBuffer,
@@ -52,28 +54,24 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
 	                            void *userData ) {
 	pa_output_data *data = (pa_output_data*)userData;
 	float *out = (float*)outputBuffer;
-	int locked = data->buffer_index;
+	int locked = data->read_index;
 
 	(void) timeInfo; /* Prevent unused variable warnings. */
 	(void) statusFlags;
 	(void) inputBuffer;
 	
-	// fprintf(stderr, "LOCKING play: %d\n", locked);
+	/* acquire lock for reading from the current output buffer */
 	LOCK(&data->reading[locked]);
-	// fprintf(stderr, "LOCKED play: %d\n", locked);
 
-	memcpy(out, data->buffers[data->buffer_index], data->buffer_size * sizeof(float));
+	memcpy(out, data->buffers[data->read_index], data->buffer_size * sizeof(float));
 
-	/* this buffer is no longer dirty */
-	data->dirty[data->buffer_index] = 0;
-	data->buffer_index = (data->buffer_index + 1) % BUFFERS;
+	/* increment our read position in the buffer ring */
+	data->read_index = (data->read_index + 1) % BUFFERS;
 
-	// fprintf(stderr, "UNLOCKING play: %d\n", locked);
+	/* once we're done reading, unlock both reading and writing so this buffer can be filled again */
 	UNLOCK(&data->reading[locked]);
 	UNLOCK(&data->writing[locked]);
 	
-	// fprintf(stderr, "UNLOCKED play: %d\n", locked);
-
 	return paContinue;
 }
 
@@ -82,48 +80,51 @@ static int pa_output_callback(	const void *inputBuffer, void *outputBuffer,
  */
 int send_output_data(float *interleaved_float_samples, pa_output_data *data, int done) {
 	PaError err = 0;
-	int locked = data->fill_index;
+	int locked = data->write_index;
 	
+	/* check to see if our source is done playing */
 	if (done != 0) {
-		fprintf(stderr, "Oh look, we're done\n");
 		data->stopped = 1;
 		
+		/* Pa_StopStream will inform PortAudio we're done, and let it play any remaining buffers available */
 		err = Pa_StopStream( data->stream );
 		if (err != 0) {
 			fprintf(stderr, "Error with Pa_StopStream\n");
 		    fprintf( stderr, "Error number: %d\n", err );
 		    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
+			return err;
 		}
 
-		fprintf(stderr, "Pa_StopStream done\n");
+		return 0;
 	}
 
-	// fprintf(stderr, "LOCKING fill: %d\n", locked);
+	/* once we can write to the current buffer, prevent the callback from reading it */
 	LOCK(&data->writing[locked]);
 	LOCK(&data->reading[locked]);
-	// fprintf(stderr, "LOCKED fill: %d\n", locked);
 	
 	/* copy data into the output buffer */
-	memcpy((void *)data->buffers[data->fill_index], (const void *)interleaved_float_samples, (size_t)(data->buffer_size * sizeof(float)));
-	data->dirty[data->fill_index] = 1;
-	data->fill_index = (data->fill_index + 1) % BUFFERS;
+	memcpy((void *)data->buffers[data->write_index], (const void *)interleaved_float_samples, (size_t)(data->buffer_size * sizeof(float)));
+
+	/* increment our write position in the buffer ring */
+	data->write_index = (data->write_index + 1) % BUFFERS;
 
 	/* start playing once we've filled all the BUFFERS */
-	if (data->fill_index == 0 && data->started == 0) {
+	if (data->write_index == 0 && data->started == 0) {
 		err = Pa_StartStream( data->stream );
 		if (err != 0) {
 			fprintf(stderr, "Error with Pa_StartStream\n");
 		    fprintf( stderr, "Error number: %d\n", err );
 		    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
+
+			/* let go of this mutex, too */
+			UNLOCK(&data->writing[locked]);
 		} else {
-			fprintf(stderr, "Starting stream\n");
 			data->started = 1;
 		}
 	}
-	
-	// fprintf(stderr, "UNLOCKING fill: %d\n", locked);
+
+	/* we're done writing so this buffer is available for reading */
 	UNLOCK(&data->reading[locked]);
-	// fprintf(stderr, "UNLOCKED fill: %d\n", locked);
 
 	return err;
 }
@@ -147,15 +148,14 @@ int init_portaudio_output(int channels, int sample_rate, int frame_size, pa_outp
 			fprintf(stderr,"Error: Not enough memory");
 			return errno;
 		}
-		data->dirty[i] = 0;
 		PROTECT(pthread_mutex_init(&data->reading[i], NULL));
 		PROTECT(pthread_mutex_init(&data->writing[i], NULL));
 	}
 	
 	data->started = 0;
 	data->stopped = 0;
-	data->buffer_index = 0;
-	data->fill_index = 0;
+	data->read_index = 0;
+	data->write_index = 0;
 	data->buffer_size = channels * frame_size;
 	
 	err = Pa_Initialize();
@@ -205,7 +205,6 @@ int close_portaudio(pa_output_data *data) {
 	    fprintf( stderr, "Error number: %d\n", err );
 	    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
 	}
-    fprintf( stderr, "Pa_CloseStream'ed\n" );
 
 	for (i = 0; i < BUFFERS; i++) {
 		PROTECT(pthread_mutex_destroy(&data->reading[i]));
@@ -215,6 +214,5 @@ int close_portaudio(pa_output_data *data) {
 	free(data->buffers);
 
     Pa_Terminate();
-    fprintf( stderr, "Pa_Terminate'ed\n" );
 	return err;
 }
