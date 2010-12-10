@@ -12,7 +12,7 @@ import (
 	"afp/filters/stdout"
 	"afp/filters/tone"
 	"afp/filters/portaudio"
-/*    "afp/filters/alsa"*/
+	"afp/filters/alsa"
 )
 
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
