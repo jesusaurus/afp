@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"afp"
-	"sync"
 )
 
 type FilterWrapper struct {
@@ -18,6 +17,9 @@ type FilterWrapper struct {
 	finished chan int
 }
 
+//InitPipeline takes a parsed pipeline spec and attempts to create the appropriate 
+//filters, wrap them, and insert them into the pipeline.  It checks that the first 
+//filter is a source, the last a sink, and that any between are links
 func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	if len(pipelineSpec) < 2 {
 		errors.Println("Pipeline specification must have at least a Source and Sink")
@@ -31,7 +33,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		nextHeaderLink chan afp.StreamHeader
 		ctx            *afp.Context
 	)
-
+	
 	ctx = &afp.Context{
 		Sink:       link,
 		HeaderSink: headerLink,
@@ -50,7 +52,12 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		os.Exit(1)
 	}
 
+	//In case of an error elsewhere, or a external signal, shutdown may be called
+	//in the middle of constructing the pipeline.  Be sure that we do not modify
+	//the pipeline at the same time.
+	pipelineLock.Lock()
 	Pipeline = append(Pipeline, &FilterWrapper{src, ctx, pipelineSpec[0][0], make(chan int, 1)})
+	pipelineLock.Unlock()
 
 	for _, filterSpec := range pipelineSpec[1 : len(pipelineSpec)-1] {
 		nextLink = make(chan [][]float32, CHAN_BUF_LEN)
@@ -73,7 +80,9 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 			os.Exit(1)
 		}
 
+		pipelineLock.Lock()
 		Pipeline = append(Pipeline, &FilterWrapper{newFilter, ctx, filterSpec[0], make(chan int, 1)})
+		pipelineLock.Unlock()
 
 		link = nextLink
 		headerLink = nextHeaderLink
@@ -98,8 +107,10 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		os.Exit(1)
 	}
 
+	pipelineLock.Lock()
 	Pipeline = append(Pipeline,
 		&FilterWrapper{sink, ctx, pipelineSpec[len(pipelineSpec)-1][0], make(chan int, 1)})
+	pipelineLock.Unlock()
 }
 
 func StartPipeline() {
@@ -128,17 +139,17 @@ func constructFilter(name string, args []string, context *afp.Context) (afp.Filt
 	return newFilter, nil
 }
 
-var sdLock *sync.Mutex = &sync.Mutex{}
 
 func shutdown() {
 	//If multiple filters panic, their shutdown calls will be parallel
 	//Be sure that only one goes through
-	sdLock.Lock()
+	pipelineLock.Lock()
 	for _, f := range Pipeline {
 		if err := f.filter.Stop(); err != nil {
 			errors.Printf("Error in '%s': %s", f.name, err.String())
 		}
 	}
+	os.Exit(1)
 }
 
 func RunFilter(f *FilterWrapper) {

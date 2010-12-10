@@ -6,7 +6,6 @@ package fexec
 
 import (
 	"afp"
-	//"os"
 )
 
 type ExecSource struct {
