@@ -15,6 +15,9 @@
  */
 
 
+// #define __FFMPEG5__
+// #undef AVCORE_SAMPLEFMT_H
+
 #include "libav.h"
 #include <string.h>
 
@@ -92,8 +95,12 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 	/* initialize the AVPacket */
     av_init_packet(&context->Packet);
 
+#ifdef AVCORE_SAMPLEFMT_H
 	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
 	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
+#else
+	enum CodecID guessed_codec = CODEC_ID_MP3;
+#endif
 
 	/* find the audio decoder */
     context->Codec = avcodec_find_decoder(guessed_codec);
@@ -101,7 +108,7 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
         fprintf(stderr, "codec not found\n");
 		return -1;
     }
-
+	
 	/* set up the codec context */
     context->Cctx = avcodec_alloc_context();
 
@@ -200,8 +207,14 @@ int decode_packet(AVDecodeContext *context, int *decoded_bytes) {
 		/* we'll take as much as you can give us */
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
+#ifdef AVCORE_SAMPLEFMT_H
 		len = avcodec_decode_audio3(context->Cctx, (short *)context->Outbuf, &out_size, &context->Packet);
-
+#else
+		AVPacket *packet = &context->Packet;
+		uint8_t *packetData = packet->data;
+		int packetSize = packet->size;
+		len = avcodec_decode_audio2(context->Cctx, (short *)context->Outbuf, &out_size, packetData, packetSize);
+#endif
         if (out_size < 0) {
             fprintf(stderr, "Error while decoding, len: %d, out_size: %d\n", len, out_size);
 			return -1;
