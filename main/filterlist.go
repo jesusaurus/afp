@@ -4,6 +4,8 @@
 
 package main
 
+
+//In order to rebuild afp to include your filter, import it below..
 import (
 	"afp"
 	"afp/filters/null"
@@ -15,6 +17,9 @@ import (
     "afp/filters/alsa"
 )
 
+//And add a key : value pair to the map below, where the key is a string 
+//by which your filter should be invoked, and the value is a function
+//which constructs a ready to use instance of your filter.
 var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"execsink"		: fexec.NewExecSink,
 	"execlink"		: fexec.NewExecLink,
@@ -25,7 +30,7 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"stdoutsink"	: stdout.NewStdoutSink,
 	"libavsource"	: libavfilter.NewLibAVSource,
 	"tonesource"	: tonefilter.NewToneSource,
-//	"pasink"		: portaudio.NewPASink,
+	"pasink"		: portaudio.NewPASink,
     "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
 }
