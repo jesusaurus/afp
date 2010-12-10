@@ -2,8 +2,8 @@
 #This source code is released under the terms of the
 #MIT license. Please see the file LICENSE for license details.
 
-ifeq ($(AFPMANDIR),"")
-$(error $$AFPMANDIR is not set)
+ifeq ($(AFPMANDIR),)
+$(error $$AFPMANDIR is not set, manpages will not be installed.)
 endif
 
 install: 
