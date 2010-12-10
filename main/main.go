@@ -77,5 +77,3 @@ func SigHandler() {
 		}
 	}
 }
-
-(replace-regexp "^\\([A-Z]+\\).*" "case syscall.\\1 :")
