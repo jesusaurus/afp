@@ -147,9 +147,21 @@ func(self *AlsaSink) Start() {
 
             //fmt.Printf(".")
 
-            if int(error) < oldLength {
+            if int(error) < 0 {
+                //we are in an error state
+                //panic(fmt.Sprintf("Could not write data to ALSA device, error: %d", error))
+                if error == C.EBADFD {
+                    panic(fmt.Sprintf("Error initializing the ALSA device"))
+                } else if error == C.ESTRPIPE {
+                    fmt.Printf("A suspend event has occurred")
+                } else if error == C.EPIPE {
+                    fmt.Printf("ALSA buffer underrun")
+                } else {
+                    panic(fmt.Sprintf("Unkown ALSA error: %d", error))
+                }
+            } else if int(error) < oldLength {
                 //not all the data was written to the device
-                panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: ", written))
+                panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: %d", error))
             }
 
             //write to the speaker in another thread
