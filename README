@@ -1,0 +1,22 @@
+For building instructions, consult BUILDING
+
+For documentation on the afp system, consult
+the manpages found in /doc
+
+While the core of AFP is mostly complete, many of the
+provided filters are in various stages of development.
+Many filters which produce realtime audio work, but 
+with poor audio quality.
+
+Basic command invocation is:
+
+./afp source ! {link !} sink
+
+For example, to simply pipe a file to the speakers:
+
+./afp libavsource ! portaudiosink
+
+To do the same, but with a 100ms delayed echo mixed in:
+
+./afp libavsource ! delay -t 100 ! portaudiosink
+
