@@ -111,8 +111,6 @@ func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
 }
 
 func(self *AlsaSink) Start() {
-
-    const FRAMES int = 256 //the double buffer holds 256 frames
     self.header = <-self.ctx.HeaderSource
 
     retval := self.prepare()
