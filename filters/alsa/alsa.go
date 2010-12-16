@@ -82,7 +82,6 @@ func (self *AlsaSource) Start() {
 
 func (self *AlsaSource) Stop() os.Error {
     C.snd_pcm_close(self.capture)
-    close(self.ctx.Sink)
     return nil
 }
 
