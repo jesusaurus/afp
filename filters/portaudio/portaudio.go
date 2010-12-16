@@ -38,7 +38,6 @@ func (self *PASink) Start() {
 
 	err := C.init_portaudio_output(C.int(self.header.Channels), C.int(self.header.SampleRate), C.int(self.header.FrameSize), &self.output_data)
     if (err != 0) {
-		os.Stderr.WriteString("Problem!")
         panic(os.NewError(fmt.Sprintf("Initialize portaudio failed, error: %d", err)))
     }
 
@@ -60,22 +59,18 @@ func (self *PASink) Start() {
         //write some data to portaudio
         err := C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 0)
 	    if (err != 0) {
-			os.Stderr.WriteString("Problem!")
 	        panic(os.NewError(fmt.Sprintf("Sending output data failed, error: %d", err)))
 	    }
     }
 
 	// terminate the stream 
-	os.Stderr.WriteString("Terminating Stream..")
 	C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 1)
 	C.close_portaudio(&self.output_data)
-	os.Stderr.WriteString("Stream Terminated..")
 
     return
 }
 
 func (self *PASink) Stop() os.Error {
-	os.Stderr.WriteString("Stopping.")
 	C.close_portaudio(&self.output_data)
     return nil
 }
