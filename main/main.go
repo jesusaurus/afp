@@ -26,7 +26,7 @@ var (
 	specFile string
 )
 
-func Init() {
+func init() {
 	go SigHandler()
 }
 
@@ -67,12 +67,10 @@ func SigHandler() {
 			os.Exit(1)
 		}
 
-		switch usig {
-		case syscall.SIGABRT, syscall.SIGFPE,  syscall.SIGILL, 
-			 syscall.SIGINT,  syscall.SIGKILL, syscall.SIGQUIT, 
-			 syscall.SIGSEGV, syscall.SIGSTOP, syscall.SIGTERM,
-		     syscall.SIGTSTP :
-			errors.Printf("Received signal: %v. Pipeline will terminate.", usig)
+		if usig == syscall.SIGINT {
+			if verbose {
+				errors.Print("SIGINT received. Pipeline will terminate.\n")
+			}
 			shutdown()
 			os.Exit(1)
 		}
