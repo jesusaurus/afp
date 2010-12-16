@@ -1,4 +1,4 @@
-// Copyright (c) 2010 Go Fightclub Authors
+// Copyright (c) 2010 AFP Authors
 // This source code is released under the terms of the
 // MIT license. Please see the file LICENSE for license details.
 
@@ -26,7 +26,7 @@ var (
 	specFile string
 )
 
-func Init() {
+func init() {
 	go SigHandler()
 }
 
@@ -57,7 +57,6 @@ func main() {
 	}
 }
 
-//
 func SigHandler() {
 	for sig := range signal.Incoming {
 		usig, ok := sig.(signal.UnixSignal)
@@ -68,12 +67,10 @@ func SigHandler() {
 			os.Exit(1)
 		}
 
-		switch usig {
-		case syscall.SIGABRT, syscall.SIGFPE,  syscall.SIGILL, 
-			 syscall.SIGINT,  syscall.SIGKILL, syscall.SIGQUIT, 
-			 syscall.SIGSEGV, syscall.SIGSTOP, syscall.SIGTERM,
-		     syscall.SIGTSTP :
-			errors.Printf("Received signal: %v. Pipeline will terminate.", usig)
+		if usig == syscall.SIGINT {
+			if verbose {
+				errors.Print("SIGINT received. Pipeline will terminate.\n")
+			}
 			shutdown()
 			os.Exit(1)
 		}

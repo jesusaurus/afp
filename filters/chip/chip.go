@@ -1,4 +1,4 @@
-// Copyright (c) 2010 Go Fightclub Authors
+// Copyright (c) 2010 AFP Authors
 
 ////
 // Chiptune-ify

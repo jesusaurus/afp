@@ -3,10 +3,12 @@ Environment Variables:
   In order to install the afp documentation, the environment variable $AFPMANDIR must be set.
 
 Dependencies:
-  A current (>= release.2010.12.02) install of the Go compiler suite and package tree
-  ffmpeg version == 5.1
-  libavcodec >= version 0.5.1
-  libportaudio2.0 (On debian systems `apt-get libportaudio-dev libportaudio2`) 
+  - A current (>= release.2010.12.02) install of the Go compiler suite and package tree
+  - ffmpeg/libavcodec/libavformat v5.1 (On debian systems `apt-get install ffmpeg libavcodec-dev libavformat-dev`) 
+  - libportaudio2.0 (On debian systems `apt-get install libportaudio-dev libportaudio2`) 
+  - alsa development files (On debian systems `apt-get install libasound2-dev`)
+  - fftw3 libs and development files (On debian systems `apt-get install libfftw3-dev libfftw3-3`)
+  - libz-dev, libbz2-dev  
 
 Building:
   From the root of the afp source tree, issue `make`.

@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
-echo "####### Building Libs #######"
+#Copyright (c) 2010 AFP Authors
+#This source code is released under the terms of the
+#MIT license. Please see the file LICENSE for license details.
+
 cd lib
 ./clean-libs
-echo "###### Building Filters #####"
 cd ../filters
 ./clean-filters
-echo "####### Building Main #######"
 cd ../main
 make clean	
-echo "##### Building Manpages #####"
-cd ../doc
-make clean
+cd ..
