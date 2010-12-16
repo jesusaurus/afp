@@ -33,7 +33,6 @@ func init() {
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
-	info.Printf("mainArgs = %v\n", mainArgs)
 	mainFlags := flags.FlagParser(mainArgs)
 	mainFlags.BoolVar(&verbose, "v", false, "Verbose output")
 	mainFlags.BoolVar(&debugging, "d", false, "Debugging mode - panics will not be caught.")
