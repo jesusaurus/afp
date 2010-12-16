@@ -23,17 +23,20 @@ var (
 	errors   *log.Logger      = log.New(os.Stderr, "[E] ", log.Ltime)
 	info     *log.Logger      = log.New(os.Stderr, "[I] ", log.Ltime)
 	verbose  bool
+	debugging bool
 	specFile string
 )
 
-func Init() {
+func init() {
 	go SigHandler()
 }
 
 func main() {
 	mainArgs, pipespec := ParsePipeline(os.Args)
+	info.Printf("mainArgs = %v\n", mainArgs)
 	mainFlags := flags.FlagParser(mainArgs)
 	mainFlags.BoolVar(&verbose, "v", false, "Verbose output")
+	mainFlags.BoolVar(&debugging, "d", false, "Debugging mode - panics will not be caught.")
 	mainFlags.StringVar(&specFile, "f", "",
 		"Pull pipeline spec from a file rather than command line")
 	mainFlags.Parse()
@@ -67,12 +70,10 @@ func SigHandler() {
 			os.Exit(1)
 		}
 
-		switch usig {
-		case syscall.SIGABRT, syscall.SIGFPE,  syscall.SIGILL, 
-			 syscall.SIGINT,  syscall.SIGKILL, syscall.SIGQUIT, 
-			 syscall.SIGSEGV, syscall.SIGSTOP, syscall.SIGTERM,
-		     syscall.SIGTSTP :
-			errors.Printf("Received signal: %v. Pipeline will terminate.", usig)
+		if usig == syscall.SIGINT {
+			if verbose {
+				errors.Print("SIGINT received. Pipeline will terminate.\n")
+			}
 			shutdown()
 			os.Exit(1)
 		}
