@@ -148,12 +148,13 @@ func shutdown() {
 		//This is ugly.  We want to catch any panics thrown in Stop methods
 		//and continue shutting down the other filters
 		func() {
-			defer func() {
-				if x := recover(); x != nil && !debugging {
-					errors.Printf("Panic caught in '%s': %v", f.name, x)
-				}
-			}()
-
+			if !debugging {
+				defer func() {
+					if x := recover(); x != nil {
+						errors.Printf("Panic caught in '%s': %v", f.name, x)
+					}
+				}()
+			}
 			if err := f.filter.Stop(); err != nil {
 				errors.Printf("Error in '%s': %s", f.name, err.String())
 			}
@@ -163,13 +164,15 @@ func shutdown() {
 }
 
 func RunFilter(f *FilterWrapper) {
-	defer func() {
-		if x := recover(); x != nil && !debugging{
-			errors.Printf("Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
-			shutdown()
-			os.Exit(1)
-		}
-	}()
+	if !debugging {
+		defer func() {
+			if x := recover(); x != nil {
+				errors.Printf("Runtime Panic caught in '%s': %v\nPipeline will terminate.", f.name, x)
+				shutdown()
+				os.Exit(1)
+			}
+		}()
+	}
 
 	f.filter.Start()
 
