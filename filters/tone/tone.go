@@ -136,7 +136,6 @@ func (self *ToneSource) Start() {
 	
 	if fo != self.header.FrameSize {
 		fo += 1
-		fmt.Fprintf(os.Stderr, "Filling from %d to %d\n", fo, self.header.FrameSize)
 		for fo < self.header.FrameSize {
 			for c = 0; c < self.header.Channels; c++ {
 				(*buffer)[fo][c] = 0.0
