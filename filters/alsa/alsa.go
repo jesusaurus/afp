@@ -135,7 +135,7 @@ func (self *AlsaSink) Start() {
         //write some data to alsa
         error := C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
 
-        fmt.Print(".")
+        //fmt.Print(".")
 
         //check our return
         if int(error) < 0 {
