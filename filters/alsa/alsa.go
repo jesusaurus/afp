@@ -1,4 +1,4 @@
-// Copyright (c) 2010 AFP Authors
+// Copyright (c) 2010 Go Fightclub Authors
 
 package alsa
 
@@ -110,95 +110,61 @@ func (self *AlsaSink) Init(ctx *afp.Context, args []string) os.Error {
     return nil
 }
 
-func(self *AlsaSink) Start() {
+func (self *AlsaSink) Start() {
     self.header = <-self.ctx.HeaderSource
 
     retval := self.prepare()
     if (retval != nil) {
         panic(retval)
     }
+    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
 
-    //almost a do..while
-    var cbuf []float32 //C buffer
-    var written chan C.snd_pcm_sframes_t = make(chan C.snd_pcm_sframes_t, 2)
-    chans := int(self.header.Channels)
-    double := make([][]float32, 0, self.header.FrameSize * 1024)
-    double = append(double, <-self.ctx.Source...)
-    length := len(double)
-    oldLength := length
-    cbuf = make([]float32, int32(self.header.Channels) * self.header.FrameSize * int32(length))
-    streamOffset := 0
-    for i := 0; i < length; i++ {
-        for j := 0; j < chans; j++ {
-            cbuf[streamOffset] = double[i][j]
-            streamOffset++
+    for buffer := range self.ctx.Source { //reading a [][]float32
+        length := int(self.header.FrameSize)
+        chans := int(self.header.Channels)
+
+	    streamOffset := 0
+        //interleave the channels
+        for i := 0; i < length; i ++ {
+            for j := 0; j < chans; j++ {
+                cbuf[streamOffset] = buffer[i][j]
+		        streamOffset++
+            }
         }
-    }
-    written <- C.snd_pcm_sframes_t(length)
 
-    for buffer := range self.ctx.Source { //blocking
+        //write some data to alsa
+        error := C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
 
-        select {
+        fmt.Print(".")
 
-        //wait for the previous write to finish
-        case error := <-written:
-
-            //fmt.Printf(".")
-
-            if int(error) < 0 {
-                //we are in an error state
-                //panic(fmt.Sprintf("Could not write data to ALSA device, error: %d", error))
-                if error == C.EBADFD {
-                    panic(fmt.Sprintf("Error initializing the ALSA device"))
-                } else if error == C.ESTRPIPE {
-                    fmt.Printf("A suspend event has occurred")
-                } else if error == C.EPIPE {
-                    fmt.Printf("ALSA buffer underrun")
-                } else {
-                    panic(fmt.Sprintf("Unkown ALSA error: %d", error))
+        //check our return
+        if int(error) < 0 {
+            //we are in an error state
+            //panic(fmt.Sprintf("Could not write data to ALSA device, error: %d", error))
+            if error == C.snd_pcm_sframes_t(0) - C.EBADFD {
+                panic(fmt.Sprintf("Error initializing the ALSA device"))
+            } else if error == C.snd_pcm_sframes_t(0) - C.ESTRPIPE {
+                fmt.Printf("A suspend event has occurred")
+            } else if error == C.snd_pcm_sframes_t(0) - C.EPIPE {
+                fmt.Printf("ALSA buffer underrun")
+                error2 := C.snd_pcm_recover(self.playback, C.EPIPE, 0)
+                if error2 != C.int(0) {
+                    panic(fmt.Sprintf("Could not recover from buffer underrun, error: %d", error2))
                 }
-            } else if int(error) < oldLength {
-                //not all the data was written to the device
-                panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: %d", error))
+            } else {
+                //fmt.Println("FD: %v\t Str Pipe: %v\t Pipe: %v\n",C.EBADFD,C.ESTRPIPE,C.EPIPE)
+                panic(fmt.Sprintf("Unkown ALSA error: %d", error))
             }
-
-            //write to the speaker in another thread
-            go func() {
-                oldLength = length
-                written <- C.snd_pcm_writei(self.playback, unsafe.Pointer(&cbuf[0]), C.snd_pcm_uframes_t(length))
-            }()
-
-            double = buffer
-
-        default:
-
-            //fmt.Print("-")
-            double = append(double, buffer...)
-            length = len(double)
-
-            //cbuf WILL be a new pointer, so we can gaurantee that the address space given to snd_pcm_writei
-            //will not be modified once it is passed; but on the down side, we rely on the garbage collector
-            //to take care of many stale slices created while filling our buffer
-            cbuf = make([]float32, int32(self.header.Channels) * self.header.FrameSize * int32(length))
-
-            //interleave the channels
-            streamOffset = 0
-            for i := 0; i < length; i++ {
-                for j := 0; j < chans; j++ {
-                    cbuf[streamOffset] = double[i][j]
-                    streamOffset++
-                }
-            }
-
-        }//end select
-
+        } else if int(error) < length {
+            //not all the data was written to the device
+            panic(fmt.Sprintf("Could not write all data to ALSA device, wrote: %d", error))
+        }
     }
 
     return
 }
 
 func (self *AlsaSink) Stop() os.Error {
-    close(self.ctx.Source)
     C.snd_pcm_close(self.playback)
     return nil
 }
