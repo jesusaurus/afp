@@ -16,20 +16,22 @@ const INITIAL_STAGE_SIZE = 30
 
 func ParsePipeline(args []string) ([]string, [][]string) {
 	var pipelineStart int
-	mainArgs := make([]string, 0, 3)
 	stages := make([][]string, 0, INITIAL_STAGE_SIZE)
-	for i, arg := range args[1:] {
-		if !strings.HasPrefix(arg, "-") {
-			pipelineStart = i + 1
+	for i := 1; i < len(args); i++ {
+		if !strings.HasPrefix(args[i], "-") {
+			pipelineStart = i
 			break
-		} else {
-			mainArgs = append(mainArgs, arg)
 		}
 	}
-
+	if pipelineStart == 0 {
+		// Only flags, no pipeline: don't attempt to parse the pipeline
+		return args, stages
+	}
+	mainArgs := args[:pipelineStart]
 	currentStage := make([]string, 0, 10)
 	for _, arg := range args[pipelineStart:] {
 		if arg == "!" {
+			// Disallow afp <pipeline segment> ! ! <pipeline segment>
 			if len(currentStage) < 1 {
 				errors.Println("Empty pipeline stages are not allowed")
 				os.Exit(1)
@@ -46,7 +48,6 @@ func ParsePipeline(args []string) ([]string, [][]string) {
 		os.Exit(1)
 	}
 	stages = append(stages, currentStage)
-
 	return mainArgs, stages
 }
 
