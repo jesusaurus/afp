@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+for F in `find . -maxdepth 1 -mindepth 1 -type d`; do
+	cd $F
+	gomake clean
+	cd ..
+done
