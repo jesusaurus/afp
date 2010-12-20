@@ -1,0 +1,68 @@
+.\" Copyright (c) 2010 AFP Authors
+.\" This source code is released under the terms of the
+.\" MIT license. Please see the file LICENSE for license details.
+
+.TH AFP 1 "DECEMBER 2010" PSU "User Manuals"
+.SH NAME 
+afp \- audio filter pipeline
+.SH SYNOPSIS
+.B afp [-v] ([-f 
+.I spec-file
+.B ] | [
+.I pipeline
+.B ])
+.SH DESCRIPTION
+.B afp
+constructs and runs an audio processing
+pipeline composed of a series of filters.
+The pipeline is specified using a 
+bang ('!') separated list of filters.
+The behavior of a given filter may be
+modified by passing it arguments as
+specified below.
+
+.SH OPTIONS
+.IP -v
+Verbose output
+.IP "-f spec-file"
+Read the pipeline spec from 
+.I spec-file
+instead of command line
+.SH BUILTIN FILTERS
+.SS "alsasource"
+Read data from a system mic.
+.SS "alsasink"
+Output directly to the system audio device.
+.SS "delay -t <time>"
+Mixes in an echo of the input, offset by 
+.I time
+milliseconds.
+.SS "execsource <command> [args]"
+.SS "execlink <command> [args]"
+.SS "execsink <command> [args]"
+Executes command as a filter of the appropriate type
+.SS "nullsource -s <time>"
+Outputs 
+.I time
+seconds of silence.
+.SS "nulllink"
+Pipes data through without alteration
+.SS "nullsink"
+Discards all data recieved
+.SS "pasink"
+Output to system audio device using libportaudio
+.SH FILES
+	None.
+.SH BUGS
+	Plenty.
+.SH AUTHORS
+Aaron Devore <aaron.devore@gmail.com>
+.br
+John Harker <kjharke@cs.pdx.edu>
+.br
+Cory Kolbeck <ckolbeck@cs.pdx.edu>
+.br
+Eric O'Connell <eric@zerominuszero.net>
+.SH "SEE ALSO"
+.BR afp-dev (8),
+.BR afp-fmt (5)
