@@ -20,7 +20,7 @@ var clipTypes = map[string]func(*DistortFilter) {
     "hard" : hard,
 	"soft" : nil,
 	"overflow" : nil,
-	"foldback" : nil,
+	"foldback" : foldback,
 
 }
 
@@ -97,9 +97,29 @@ func hardMin(clip, sprime float32) {
 	return sprime
 }
 
+func foldback(f *DistortFilter) {
+	for frame := range f.ctx.Source {
+		for slice := range frame {
+			for ch, sample := range slice {
+				frame[slice][ch] = fold(sample * f.gain, f.clip)
+			}
+		}
+		self.ctx.Sink <- frame
+	}
+}
 
+//Helper function for foldback
+//Computes the actual value of a sample
+func fold(sample, clip float32) float32 {	
 
+	if sample > clip {
+		sample = 2 * clip - sample
+	} else if sample < -clip {
+		sample = clip + sample
+	}
 
+	return sample
+}
 
 //Original C version by Alexander Kritov 
 //http://www.musicdsp.org/archive.php?classid=1#68  
