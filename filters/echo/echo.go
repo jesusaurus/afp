@@ -32,27 +32,28 @@ func (self *EchoFilter) Usage() {
 func (self *EchoFilter) Init(ctx *afp.Context, args []string) os.Error {
     self.context = ctx
     //TODO: add argument parsing for decay rate
-    self.decay = .3
+    self.decay = .2
     return nil
 }
 
 func (self *EchoFilter) Start() {
+    self.header = <-self.context.HeaderSource
+    self.context.HeaderSink <- self.header
+
     buffer := <-self.context.Source
     frameSize := len(buffer)
-    for i := 0; i < 2; i++ {
-        //make the buffer 3x the frame size
-        buffer = append(buffer, <-self.context.Source...)
-    }
+    //make the buffer 2x the frame size
+    buffer = append(buffer, <-self.context.Source...)
 
     for nextFrame := range self.context.Source {
         for i := 0; i < frameSize; i++ {
             for j := int8(0); j < self.header.Channels; j++ {
                 //ECHO, Echo, echo...
-                buffer[i+1][j] = buffer[i][j] * self.decay
+                buffer[i+1][j] += buffer[i][j] * self.decay
             }
         }
 
-        self.context.Sink <- buffer[0:frameSize-1]
+        self.context.Sink <- buffer[0:frameSize]
         buffer = buffer[frameSize:]
         buffer = append(buffer, nextFrame...)
     }
