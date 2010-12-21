@@ -45,7 +45,7 @@ func (self *DelayFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.delayTimeInMs = *t	
 	
 	if self.delayTimeInMs <= 0 {
-		panic("Delay time must be greater than zero")
+		return os.NewError("Delay time must be greater than zero")
 	}
 
 	return nil
@@ -69,26 +69,27 @@ func (self *DelayFilter) Start() {
 func (self *DelayFilter) process() {
 	var (
 		t int64 = 0
-/*		d float32 = 0.75
+		d float32 = 0.75
 		w float32 = 0.25
-*/		mbStart int64 = 0
+		mbStart int64 = 0
 		mbOffset int64 = 0
 	)
 
-/*	println("mbsize: ", self.mixBufferSize,  * self.header.FrameSize)*/
+	d = w
+	w = d
 	
 	for audio := range(self.context.Source) {
 		// create a destination buffer
 		destBuffer := makeBuffer(self.header.FrameSize, self.header.Channels)
 		
 		// set mixBuffer to current buffer in the ring to be filled & copy the source audio into that buffer
-		mixBuffer := self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))]
+		mixBuffer := self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))-1]
 		copy(mixBuffer, audio[:])
 
-		println("t: ", t, " mbStart: ", mbStart, " mbOffset: ", mbOffset, " from: ", mbStart * int64(self.header.FrameSize), " to: ", ((mbStart+1)*int64(self.header.FrameSize)))
+		println("t: ", t, " mbStart: ", mbStart, " mbOffset: ", mbOffset, " from: ", mbStart * int64(self.header.FrameSize), " to: ", ((mbStart+1)*int64(self.header.FrameSize))-1)
 
 		for t1,sample := range(audio) {
-			for c,_ := range(sample) {
+/*			for c,_ := range(sample) {
 				(*destBuffer)[t1][c] = self.mixBuffer[mbOffset][c]
 			}
 			if t > int64(self.extraSamples) {
@@ -96,8 +97,10 @@ func (self *DelayFilter) process() {
 				mbOffset %= (self.mixBufferSize * int64(self.header.FrameSize))
 			}
 			t++
-/*			(*destBuffer)[t1] = sample*/
-/*			if t < int64(self.extraSamples) {
+*/
+/*			(*destBuffer)[t1] = sample */
+
+			if t < int64(self.extraSamples) {
 				for c,_ := range(sample) {
 					(*destBuffer)[t1][c] = 0 * w * d // amplitude * d
 				}
@@ -116,7 +119,8 @@ func (self *DelayFilter) process() {
 				mbOffset = 0
 			}
 			t++
-*/		}
+		
+		}
 		
 /*		self.context.Sink <- mixBuffer */
 		self.context.Sink <- *destBuffer
