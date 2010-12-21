@@ -111,13 +111,13 @@ func foldback(f *DistortFilter) {
 //Helper function for foldback
 //Computes the actual value of a sample
 func fold(sample, clip float32) float32 {	
-
-	if sample > clip {
-		sample = 2 * clip - sample
-	} else if sample < -clip {
-		sample = clip + sample
+	for sample > clip || sample < -clip {
+		if sample > clip {
+			sample = 2 * clip - sample
+		} else {
+			sample = clip + sample
+		}
 	}
-
 	return sample
 }
 
