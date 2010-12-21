@@ -6,8 +6,9 @@ package delay
 
 import (
 	"afp"
-	"flags"
+	"afp/flags"
 	"os"
+	"math"
 )
 
 type DelayFilter struct {
@@ -17,11 +18,16 @@ type DelayFilter struct {
 	samplesPerMillisecond int
 	delayTimeInMs int
 	extraSamples int
+	mixBufferSize int64
 	bufferSize int32
 	channels int16
 	bytesPerSample int16
 	buffers [][][]float32
-	frameCopy [][]float32
+	mixBuffer [][]float32
+}
+
+func NewDelayFilter() afp.Filter {
+	return &DelayFilter{}
 }
 
 func (self *DelayFilter) GetType() int {
@@ -37,7 +43,10 @@ func (self *DelayFilter) Init(ctx *afp.Context, args []string) os.Error {
 	parser.Parse()
 	
 	self.delayTimeInMs = *t	
-	self.extraSamples = self.delayTimeInMs * self.samplesPerMillisecond;
+	
+	if self.delayTimeInMs <= 0 {
+		panic("Delay time must be greater than zero")
+	}
 
 	return nil
 }
@@ -45,6 +54,11 @@ func (self *DelayFilter) Init(ctx *afp.Context, args []string) os.Error {
 func (self *DelayFilter) Start() {
 	self.header = <-self.context.HeaderSource
 	self.context.HeaderSink <- self.header
+
+	self.samplesPerMillisecond = int(self.header.SampleRate / 1000)
+	self.extraSamples = self.delayTimeInMs * self.samplesPerMillisecond;
+	println("mixBufferSize: ", self.extraSamples, " / ", self.header.FrameSize)
+	self.mixBufferSize = int64(math.Ceil(float64(self.extraSamples) / float64(self.header.FrameSize))) + 1
 	
 	self.initBuffers()
 	self.process()
@@ -53,27 +67,59 @@ func (self *DelayFilter) Start() {
 func (self *DelayFilter) process() {
 	var (
 		t int64 = 0
-		t1 int64 = 0
-		d float32 = 0.75
+/*		d float32 = 0.75
 		w float32 = 0.25
+*/		mbStart int64 = 0
+		mbOffset int64 = 0
 	)
 
-	buffer := 0
-	destBuffer := self.buffers[buffer][:] 
+/*	println("mbsize: ", self.mixBufferSize,  * self.header.FrameSize)*/
 	
 	for audio := range(self.context.Source) {
-		self.frameCopy = audio
-		for _,sample := range(audio) {
-			if t < self.extraSamples {
-				for c,amplitude := range(sample) {
-					destBuffer[t1][c] = amplitude * d
+		destBuffer := makeBuffer(self.header.FrameSize, self.header.Channels)
+		mixBuffer := self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))]
+		copy(mixBuffer, audio[:])
+		println("t: ", t, " mbStart: ", mbStart, " mbOffset: ", mbOffset, " from: ", mbStart * int64(self.header.FrameSize), " to: ", ((mbStart+1)*int64(self.header.FrameSize)))
+
+		for t1,sample := range(audio) {
+			println(t, mbOffset)
+			for c,_ := range(sample) {
+				(*destBuffer)[t1][c] = self.mixBuffer[mbOffset][c]
+			}
+			if t > int64(self.extraSamples) {
+				mbOffset++
+				mbOffset %= (self.mixBufferSize * int64(self.header.FrameSize))
+			}
+			t++
+/*			(*destBuffer)[t1] = sample*/
+/*			if t < int64(self.extraSamples) {
+				for c,_ := range(sample) {
+					(*destBuffer)[t1][c] = 0 * w * d // amplitude * d
 				}
 			} else {
-				for c,amplitude := range(sample) {
-					destBuffer[t1][c] = amplitude * d + 
+				for c,_ := range(sample) {
+					(*destBuffer)[t1][c] = self.mixBuffer[mbOffset][c] // + amplitude * d
 				}
+				mbOffset++
 			}
-		}
+			
+			if (t == int64(self.extraSamples)) {
+				println("Starting delay at ", t, " mbOffset: ", mbOffset)
+			}
+
+			if (mbOffset >= (self.mixBufferSize * int64(self.header.FrameSize))) {
+				mbOffset = 0
+			}
+			t++
+*/		}
+		
+/*		self.context.Sink <- mixBuffer // *destBuffer*/
+		self.context.Sink <- *destBuffer
+/*		self.context.Sink <- self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))]*/
+
+		mbStart++
+		mbStart %= self.mixBufferSize
+		
 	}
 	
 	// while incoming audio available
@@ -97,6 +143,15 @@ func (self *DelayFilter) process() {
 	
 }
 
+func makeBuffer(size int32, channels int8) *[][]float32 {
+	b := make([][]float32, size)
+	for i,_ := range(b) {
+		b[i] = make([]float32, channels)
+	}
+	
+	return &b
+}
+
 func (self *DelayFilter) initBuffers() {
 	self.bufferSize = self.header.FrameSize
 	
@@ -110,8 +165,13 @@ func (self *DelayFilter) initBuffers() {
 		}
 	}
 	
-	self.frameCopy = make([][]float32, self.header.FrameSize)
-	for i,_ := range self.frameCopy {
-		self.frameCopy[i] = make([]float32, self.header.Channels)
+	println("mix buffer size: ", self.mixBufferSize * int64(self.header.FrameSize))
+	self.mixBuffer = make([][]float32, self.mixBufferSize * int64(self.header.FrameSize))
+	for i,_ := range self.mixBuffer {
+		self.mixBuffer[i] = make([]float32, self.header.Channels)
 	}
+}
+
+func (self *DelayFilter) Stop() os.Error {
+	return nil
 }
