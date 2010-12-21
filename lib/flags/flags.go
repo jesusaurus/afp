@@ -197,7 +197,7 @@ func (f *float64Value) Set(s string) bool {
 func (f *float64Value) String() string { return fmt.Sprintf("%v", *f) }
 
 // -- Float32 Value
-type float32Value float64
+type float32Value float32
 
 func newFloat32Value(val float32, p *float32) *float32Value {
 	*p = val
@@ -438,6 +438,20 @@ func (self *FlagParserType) Float64Var(p *float64, name string, value float64, u
 func (self *FlagParserType) Float64(name string, value float64, usage string) *float64 {
 	p := new(float64)
 	self.Float64Var(p, name, value, usage)
+	return p
+}
+
+// Float32Var defines a float32 flag with specified name, default value, and usage string.
+// The argument p points to a float32 variable in which to store the value of the flag.
+func (self *FlagParserType) Float32Var(p *float32, name string, value float32, usage string) {
+	self.Var(newFloat32Value(value, p), name, usage)
+}
+
+// Float32 defines a float32 flag with specified name, default value, and usage string.
+// The return value is the address of a float32 variable that stores the value of the flag.
+func (self *FlagParserType) Float32(name string, value float32, usage string) *float32 {
+	p := new(float32)
+	self.Float32Var(p, name, value, usage)
 	return p
 }
 
