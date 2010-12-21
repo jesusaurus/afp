@@ -15,6 +15,7 @@ import (
 	"afp/filters/tone"
 	"afp/filters/portaudio"
     "afp/filters/alsa"
+    "afp/filters/echo"
 )
 
 //And add a key : value pair to the map below, where the key is a string 
@@ -33,4 +34,5 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"pasink"		: portaudio.NewPASink,
     "alsasource"    : alsa.NewAlsaSource,
     "alsasink"      : alsa.NewAlsaSink,
+    "echolink"      : echo.NewEchoFilter,
 }
