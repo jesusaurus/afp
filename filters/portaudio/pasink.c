@@ -17,7 +17,7 @@
 #define LOCK(x) if((pthread_mutex_lock(x)) < 0) { perror(#x); return -1; }
 #define UNLOCK(x) if((pthread_mutex_unlock(x)) < 0) { perror(#x); return -1; }
 
-#define BUFFERS 4
+#define BUFFERS 2
 
 /* context struct for buffering output audio, passed to context */
 typedef struct {
