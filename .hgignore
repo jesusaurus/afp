@@ -1,5 +1,6 @@
 syntax: glob
 
+*~
 *.a
 *.o
 *.6
@@ -16,3 +17,4 @@ research/piping/write
 main/afp
 afp
 afptest
+stk-4.4.2/
