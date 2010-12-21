@@ -196,6 +196,22 @@ func (f *float64Value) Set(s string) bool {
 
 func (f *float64Value) String() string { return fmt.Sprintf("%v", *f) }
 
+// -- Float32 Value
+type float32Value float64
+
+func newFloat32Value(val float32, p *float32) *float32Value {
+	*p = val
+	return (*float32Value)(p)
+}
+
+func (f *float32Value) Set(s string) bool {
+	v, err := strconv.Atof32(s)
+	*f = float32Value(v)
+	return err == nil
+}
+
+func (f *float32Value) String() string { return fmt.Sprintf("%v", *f) }
+
 // Value is the interface to the dynamic value stored in a flag.
 // (The default value is represented as a string.)
 type Value interface {
