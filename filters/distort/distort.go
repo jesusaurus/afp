@@ -17,7 +17,7 @@ type DistortFilter struct {
 }
 
 var clipTypes = map[string]func(*DistortFilter) {
-    "hard" : hardCutoff,
+    "hard" : hard,
 	"soft" : nil,
 	"overflow" : nil,
 	"foldback" : nil,
@@ -28,7 +28,7 @@ func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
     fParse := flags.FlagParser(args)
-	gain64 := fParse.Float64("g", 1.0,
+	fParse.Float32Var("g", 1.0,
 		"Signal gain to apply before clipping. Must be greater than 0.")
     clipLevel := fParse.Float64("c", 1.0,
         "The amplitude at which to clip the signal. Must be between 0 and 1.")
@@ -64,11 +64,46 @@ func (self *DistortFilter) GetType() int {
 }
 
 func (self *DistortFilter) Start() {
+	self.ctx.HeaderSink <- (<-self.ctx.HeaderSource)
+	self.clipper(self)
 }
+
+func hard(f *DistortFilter) {
+	for frame := range f.ctx.Source {
+		for slice := range frame {
+			for ch, sample := range slice {
+				frame[slice][ch] = hardMin(f.clip, sample * f.gain)
+			}
+		}
+		self.ctx.Sink <- frame
+	}
+}
+
+//Min function which knows about hard(). 
+//specifically that clip will always be positive
+func hardMin(clip, sprime float32) {
+	var t float32
+
+	if sprime < 0 {
+		t = -sprime
+	} else {
+		t = sprime
+	}
+	
+	if t > clip {
+		return clip
+	}
+
+	return sprime
+}
+
+
+
+
 
 //Original C version by Alexander Kritov 
 //http://www.musicdsp.org/archive.php?classid=1#68  
-func _DSF(x, a, N, fi float32) {
+func soft(x, a, N, fi float32) {
     var (
         s1 = pow(a, N-1.0) * sin((N - 1.0) * x + fi)
         s2 = pow(a, N) * sin(N * x + fi)
