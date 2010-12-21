@@ -37,6 +37,16 @@ Output directly to the system audio device.
 Mixes in an echo of the input, offset by 
 .I time
 milliseconds.
+.SS "distort -t <type> -a <amp. multiplier> -c <clip point>"
+Distorts the incoming signal.  Samples are multiplied by
+.I a
+and clipped at 
+.I c
+(where 0 <= c <= 1).  The type of clipping may be specified
+with -t, available options are
+.IR "hard, taper, " and linear.
+The default is
+.I hard 
 .SS "execsource <command> [args]"
 .SS "execlink <command> [args]"
 .SS "execsink <command> [args]"
