@@ -12,21 +12,45 @@ import (
 
 type DistortFilter struct {
 	ctx *afp.Context
-    amp Float32
+    gain, clip Float32
     clipper func(*DistortFilter)
 }
 
 var clipTypes = map[string]func(*DistortFilter) {
     "hard" : hardCutoff,
+	"soft" : nil,
+	"overflow" : nil,
+	"foldback" : nil,
+
 }
 
 func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
     fParse := flags.FlagParser(args)
-    amp64 := fParse.Float64("a", math.NaN(),
-        "The amplitude at which to clip the signal. 0.0 < a < 1.0")
-    clipT := fParse.String("t", "hard", "The type of clipping used: hard")
+	gain64 := fParse.Float64("g", 1.0,
+		"Signal gain to apply before clipping. Must be greater than 0.")
+    clipLevel := fParse.Float64("c", 1.0,
+        "The amplitude at which to clip the signal. Must be between 0 and 1.")
+    clipType := fParse.String("t", 
+		"soft", "The type of clipping used: hard, soft, overflow, or foldback.")
+	
+	fParse.Parse()
+
+	if gain64 <= 0 {
+		return os.NewError("Gain must be greater than 0.")
+	}
+	self.gain = float32(gain64)
+
+	if clip64 > 1 || clip64 < 0{
+		return os.NewError("Clipping level must be between 0 and 1")
+	}
+	self.clip = float32(clip64)
+	self.clipper, ok := clipTypes[clipType]
+
+	if !ok {
+		return os.NewError("Clipping type must be one of: hard, soft, overflow, or foldback")
+	}
 
 	return nil
 }
