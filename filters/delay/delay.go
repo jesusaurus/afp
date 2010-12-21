@@ -57,7 +57,9 @@ func (self *DelayFilter) Start() {
 
 	self.samplesPerMillisecond = int(self.header.SampleRate / 1000)
 	self.extraSamples = self.delayTimeInMs * self.samplesPerMillisecond;
-	println("mixBufferSize: ", self.extraSamples, " / ", self.header.FrameSize)
+	
+	// the mixBuffer is a ring buffer, each subsection size is self.header.FrameSize, and has n+1 buffers
+	// ie, if the delay size is <= frameSize, we have a ring buffer of size 2
 	self.mixBufferSize = int64(math.Ceil(float64(self.extraSamples) / float64(self.header.FrameSize))) + 1
 	
 	self.initBuffers()
@@ -76,13 +78,16 @@ func (self *DelayFilter) process() {
 /*	println("mbsize: ", self.mixBufferSize,  * self.header.FrameSize)*/
 	
 	for audio := range(self.context.Source) {
+		// create a destination buffer
 		destBuffer := makeBuffer(self.header.FrameSize, self.header.Channels)
+		
+		// set mixBuffer to current buffer in the ring to be filled & copy the source audio into that buffer
 		mixBuffer := self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))]
 		copy(mixBuffer, audio[:])
+
 		println("t: ", t, " mbStart: ", mbStart, " mbOffset: ", mbOffset, " from: ", mbStart * int64(self.header.FrameSize), " to: ", ((mbStart+1)*int64(self.header.FrameSize)))
 
 		for t1,sample := range(audio) {
-			println(t, mbOffset)
 			for c,_ := range(sample) {
 				(*destBuffer)[t1][c] = self.mixBuffer[mbOffset][c]
 			}
@@ -113,7 +118,7 @@ func (self *DelayFilter) process() {
 			t++
 */		}
 		
-/*		self.context.Sink <- mixBuffer // *destBuffer*/
+/*		self.context.Sink <- mixBuffer */
 		self.context.Sink <- *destBuffer
 /*		self.context.Sink <- self.mixBuffer[mbStart * int64(self.header.FrameSize):((mbStart+1)*int64(self.header.FrameSize))]*/
 
@@ -153,19 +158,6 @@ func makeBuffer(size int32, channels int8) *[][]float32 {
 }
 
 func (self *DelayFilter) initBuffers() {
-	self.bufferSize = self.header.FrameSize
-	
-	/* initialize floatSamples buffer */
-	self.buffers = make([][][]float32, 2)
-	for i,_ := range(self.buffers) {
-		self.buffers[i] = make([][]float32, self.header.FrameSize)
-
-		for j,_ := range(self.buffers[i]) {
-			self.buffers[i][j] = make([]float32, self.header.Channels)
-		}
-	}
-	
-	println("mix buffer size: ", self.mixBufferSize * int64(self.header.FrameSize))
 	self.mixBuffer = make([][]float32, self.mixBufferSize * int64(self.header.FrameSize))
 	for i,_ := range self.mixBuffer {
 		self.mixBuffer[i] = make([]float32, self.header.Channels)
