@@ -159,11 +159,3 @@ func (self *ToneSource) Stop() os.Error {
 	close(self.context.Sink)
 	return nil
 }
-
-/*type Filter interface {
-	GetType() int
-	Init(*Context, []string) os.Error
-	Start()
-	Stop() os.Error
-}
-*/
