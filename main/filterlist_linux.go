@@ -17,6 +17,7 @@ import (
 	"afp/filters/portaudio"
 	"afp/filters/alsa"
 	"afp/filters/distort"
+	"afp/filters/pass"
 )
 
 //And add a key : value pair to the map below, where the key is a string 
@@ -37,4 +38,5 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter{
 	"alsasource":  alsa.NewAlsaSource,
 	"alsasink":    alsa.NewAlsaSink,
 	"distort":     distort.NewFilter,
+	"lowpass":     pass.NewLowPassFilter,
 }
