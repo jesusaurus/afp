@@ -31,9 +31,9 @@ func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 		"Signal gain to apply before clipping. Must be > 0.")
     fParse.Float32Var(&self.clip, "c", 1.0,
         "The amplitude at which to clip the signal. Must be in (0,1)")
-	fParse.Float32Var(&self.hardness, "k", 100,
+	fParse.Float32Var(&self.hardness, "k", 10,
 			"Clipping 'hardness' for the variable clipping filter. Must be" +
-			" in [0,\u221E), where 0 is no clipping and \u221E is hard clipping.")
+			" in [1,\u221E), where 1 is no clipping and \u221E is hard clipping.")
 	clipType := fParse.String("t", 
 		"soft", "The type of clipping used: hard, variable, cubic, or foldback.")
 	
@@ -130,6 +130,8 @@ func fold(sample, clip float32) float32 {
 	return sample
 }
 
+
+
 func cubic(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
@@ -141,12 +143,11 @@ func cubic(f *DistortFilter) {
 	}
 }
 
-
-//This algorithm found at:
+//This algorithm is an adaptation of the one found at:
 //https://ccrma.stanford.edu/~jos/pasp/Soft_Clipping.html#29299
-//       { -2/3 * clip        x <= -clip
-// out = {  x - x^3/3   -clip < x < clip
-//       {  2/3 * clip        x >= clip
+//       { -2/3 * clip           x <= -clip
+// out = {  x - x^3/3    -clip < x < clip
+//       {  2/3 * clip           x >= clip
 func cubicClip(sample, clip float32) float32 {
 	if sample >= clip {
 		sample = 0.66666666666666666666666 * clip
@@ -158,26 +159,32 @@ func cubicClip(sample, clip float32) float32 {
 	return sample
 }
 
+//Variable distortion via a modification of the formula
+//from http://www.musicdsp.org/showone.php?id=104
+//by scoofy[AT]inf[DOT]elte[DOT]hu
+//For each sample, we evaluate:
+// c/atan(s) * atan(x*s), where c is the clip level, s is
+// the hardness, and x is the sample data.
 func variable(f *DistortFilter) {
+	//Precompute what we can..
+	hardnessMult := f.clip / atan(f.hardness)
+
 	for frame := range f.ctx.Source {
 		for slice := range frame {
 			for ch, sample := range slice {
-				frame[slice][ch] = variableClip(f.hardness, sample * f.gain, f.clip)
+				frame[slice][ch] = hardnessMult * atan(sample * f.hardness)
 			}
 		}
 		self.ctx.Sink <- frame
 	}
 }
 
-func variableClip(k, gain, sample, clip float32) float32 {
-}
-
 //Provides a good enough approximation of atan
-//in [-1,1].  
+//in [-2,2].  Thanks to antiprosynthesis[AT]hotmail[DOT]com
+//Not used at this time.
 func fastAtan(x float32) float32 {
 	return x / (1 + .28 * x * x)
 }
-
 
 //Original C version by Alexander Kritov 
 //http://www.musicdsp.org/archive.php?classid=1#68  
