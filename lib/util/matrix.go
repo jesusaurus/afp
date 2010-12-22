@@ -1,4 +1,8 @@
-package matrix
+// Copyright (c) 2010 AFP Authors
+// This source code is released under the terms of the
+// MIT license. Please see the file LICENSE for license details.
+
+package util
 
 /**
  * Given a slice of samples, returns a slice of channels, or visa-versa
