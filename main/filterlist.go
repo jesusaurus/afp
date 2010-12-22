@@ -13,8 +13,9 @@ import (
 	"afp/filters/libav"
 	"afp/filters/stdout"
 	"afp/filters/tone"
+	"afp/filters/delay"
 	"afp/filters/portaudio"
-    "afp/filters/alsa"
+/*    "afp/filters/alsa"*/
 )
 
 //And add a key : value pair to the map below, where the key is a string 
@@ -31,6 +32,7 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter {
 	"libavsource"	: libavfilter.NewLibAVSource,
 	"tonesource"	: tonefilter.NewToneSource,
 	"pasink"		: portaudio.NewPASink,
-    "alsasource"    : alsa.NewAlsaSource,
-    "alsasink"      : alsa.NewAlsaSink,
+	"delay"			: delay.NewDelayFilter,
+/*    "alsasource"    : alsa.NewAlsaSource,
+    "alsasink"      : alsa.NewAlsaSink,*/
 }
