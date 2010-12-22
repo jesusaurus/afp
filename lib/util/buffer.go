@@ -16,7 +16,7 @@ import (
 //For n <= CHAN_BUF_LEN Buffer will delegate to FastBuffer.
 func Buffer(n int, source <-chan [][]float32) <-chan [][]float32 {
 	if n <= afp.CHAN_BUF_LEN {
-		FastBuffer(frames, source)
+		FastBuffer(n, source)
 		return source;
 	}
 
@@ -48,11 +48,11 @@ func Buffer(n int, source <-chan [][]float32) <-chan [][]float32 {
 //frames before returning.  
 func FastBuffer(n int, source <-chan [][]float32) int {
 	if n > afp.CHAN_BUF_LEN {
-		n = CHAN_BUF_LEN
+		n = afp.CHAN_BUF_LEN
 	}
 
 	for len(source) < n && !closed(source) {
-		runtime.GoSched()
+		runtime.Gosched()
 	}
 
 	//This is racey, but can only cause us to buffer more
