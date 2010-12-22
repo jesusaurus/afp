@@ -4,8 +4,10 @@
 
 package util
 
-import "afp"
-
+import (
+	"afp"
+	"runtime"
+)
 
 //Buffer will buffer n frames except in the case that the stream 
 //is closed before n frames have been read.
@@ -41,5 +43,19 @@ func Buffer(n int, source <-chan [][]float32) <-chan [][]float32 {
 	return buff
 }
 
-func FastBuffer(frames int) int {
+
+//Will buffer at least n and at most CHAN_BUF_LEN
+//frames before returning.  
+func FastBuffer(n int, source <-chan [][]float32) int {
+	if n > afp.CHAN_BUF_LEN {
+		n = CHAN_BUF_LEN
+	}
+
+	for len(source) < n && !closed(source) {
+		runtime.GoSched()
+	}
+
+	//This is racey, but can only cause us to buffer more
+	//than requested.  Shouldn't be a problem.
+	return len(source)
 }
