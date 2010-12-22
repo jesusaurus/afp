@@ -27,7 +27,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	}
 
 	var (
-		link           chan [][]float32      = make(chan [][]float32, CHAN_BUF_LEN)
+		link           chan [][]float32      = make(chan [][]float32, afp.CHAN_BUF_LEN)
 		headerLink     chan afp.StreamHeader = make(chan afp.StreamHeader, 1)
 		nextLink       chan [][]float32
 		nextHeaderLink chan afp.StreamHeader
@@ -60,7 +60,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 	pipelineLock.Unlock()
 
 	for _, filterSpec := range pipelineSpec[1 : len(pipelineSpec)-1] {
-		nextLink = make(chan [][]float32, CHAN_BUF_LEN)
+		nextLink = make(chan [][]float32, afp.CHAN_BUF_LEN)
 		nextHeaderLink = make(chan afp.StreamHeader, 1)
 
 		ctx = &afp.Context{
