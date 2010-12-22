@@ -58,8 +58,6 @@ func (self *DelayFilter) Start() {
 	self.samplesPerMillisecond = int(self.header.SampleRate / 1000)
 	self.extraSamples = self.delayTimeInMs * self.samplesPerMillisecond
 
-	println("Extra Samples: ", self.extraSamples)
-
 	self.initBuffers()
 	self.process()
 }
