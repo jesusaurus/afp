@@ -7,5 +7,4 @@ include $(GOROOT)/src/Make.inc
 TARG=afp/flags
 GOFILES=flags.go
 
-
 include $(GOROOT)/src/Make.pkg
