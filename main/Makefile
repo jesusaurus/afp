@@ -4,8 +4,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-afp: main.go filterlist.go startup.go
-	$(GC) -o main.$(O) main.go filterlist.go startup.go pipeparse.go
+afp:
+	$(GC) -o main.$(O) main.go filterlist_$(GOOS).go startup.go pipeparse.go
 	$(LD) -o ../afp main.$(O)
 
 test: testmain.go filterlist.go startup.go
