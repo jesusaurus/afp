@@ -16,6 +16,10 @@ type DistortFilter struct {
 	clipper              func(*DistortFilter)
 }
 
+func NewFilter() afp.Filter {
+	return &DistortFilter{}
+}
+
 var clipTypes = map[string]func(*DistortFilter){
 	"hard":     hard,
 	"variable": variable,
