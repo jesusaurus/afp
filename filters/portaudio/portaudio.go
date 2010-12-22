@@ -14,63 +14,63 @@ import (
 import "C"
 
 type PASink struct {
-	context *afp.Context
-	header afp.StreamHeader
+	context     *afp.Context
+	header      afp.StreamHeader
 	output_data C.pa_output_data
 }
 
 func NewPASink() afp.Filter {
-    return &PASink{}
+	return &PASink{}
 }
 
 func (self *PASink) GetType() int {
-    return afp.PIPE_SINK
+	return afp.PIPE_SINK
 }
 
 func (self *PASink) Init(ctx *afp.Context, args []string) os.Error {
-    self.context = ctx
-	
-    return nil
+	self.context = ctx
+
+	return nil
 }
 
 func (self *PASink) Start() {
-    self.header = <-self.context.HeaderSource
+	self.header = <-self.context.HeaderSource
 
 	err := C.init_portaudio_output(C.int(self.header.Channels), C.int(self.header.SampleRate), C.int(self.header.FrameSize), &self.output_data)
-    if (err != 0) {
-        panic(os.NewError(fmt.Sprintf("Initialize portaudio failed, error: %d", err)))
-    }
+	if err != 0 {
+		panic(os.NewError(fmt.Sprintf("Initialize portaudio failed, error: %d", err)))
+	}
 
-    cbuf := make([]float32, int32(self.header.Channels) * self.header.FrameSize)
+	cbuf := make([]float32, int32(self.header.Channels)*self.header.FrameSize)
 
-    for buffer := range self.context.Source { //reading a [][]float32
-        length := int(self.header.FrameSize)
-        chans := int(self.header.Channels)
+	for buffer := range self.context.Source { //reading a [][]float32
+		length := int(self.header.FrameSize)
+		chans := int(self.header.Channels)
 
 		streamOffset := 0
-        //interleave the channels
-        for i := 0; i < length; i ++ {
-            for j := 0; j < chans; j++ {
-                cbuf[streamOffset] = buffer[i][j]
+		//interleave the channels
+		for i := 0; i < length; i++ {
+			for j := 0; j < chans; j++ {
+				cbuf[streamOffset] = buffer[i][j]
 				streamOffset++
-            }
-        }
+			}
+		}
 
-        //write some data to portaudio
-        err := C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 0)
-	    if (err != 0) {
-	        panic(os.NewError(fmt.Sprintf("Sending output data failed, error: %d", err)))
-	    }
-    }
+		//write some data to portaudio
+		err := C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 0)
+		if err != 0 {
+			panic(os.NewError(fmt.Sprintf("Sending output data failed, error: %d", err)))
+		}
+	}
 
 	// terminate the stream 
 	C.send_output_data((*C.float)(&cbuf[0]), &self.output_data, 1)
 	C.close_portaudio(&self.output_data)
 
-    return
+	return
 }
 
 func (self *PASink) Stop() os.Error {
 	C.close_portaudio(&self.output_data)
-    return nil
+	return nil
 }

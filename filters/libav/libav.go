@@ -30,12 +30,12 @@ import (
  */
 
 type LibAVSource struct {
-	actx *afp.Context
-	dctx libav.AVDecodeContext
-	streamInfo libav.AVStreamInfo
+	actx         *afp.Context
+	dctx         libav.AVDecodeContext
+	streamInfo   libav.AVStreamInfo
 	floatSamples [][][]float32
-	currBuffer int8
-	
+	currBuffer   int8
+
 	inFile string
 }
 
@@ -55,17 +55,17 @@ func NewLibAVSource() afp.Filter {
 
 func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.actx = ctx
-	
+
 	parser := flags.FlagParser(args)
 	var i *string = parser.String("i", "", "The input file")
 	parser.Parse()
-	
-	if (*i != "") {
-		self.inFile = *i;
+
+	if *i != "" {
+		self.inFile = *i
 	} else {
 		return os.NewError("Please specify an input file using -i")
 	}
-	
+
 	libav.InitDecoding()
 	libav.PrepareDecoding(self.inFile, &self.dctx)
 
@@ -73,16 +73,16 @@ func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 
 	/* initialize floatSamples buffer */
 	self.floatSamples = make([][][]float32, 2)
-	for i,_ := range(self.floatSamples) {
+	for i, _ := range self.floatSamples {
 		self.floatSamples[i] = make([][]float32, self.streamInfo.FrameSize)
 
-		for j,_ := range(self.floatSamples[i]) {
+		for j, _ := range self.floatSamples[i] {
 			self.floatSamples[i][j] = make([]float32, self.streamInfo.Channels)
 		}
 	}
-	
+
 	self.currBuffer = 0
-	
+
 	return nil
 }
 
@@ -104,18 +104,18 @@ func (self *LibAVSource) GetType() int {
 
 func (self *LibAVSource) Start() {
 	self.actx.HeaderSink <- afp.StreamHeader{
-		Version : 1,
-		Channels : int8(self.streamInfo.Channels),
-		SampleSize : 4,
-		SampleRate : self.streamInfo.SampleRate,
-		FrameSize : self.streamInfo.FrameSize,
-		ContentLength : 0,
+		Version:       1,
+		Channels:      int8(self.streamInfo.Channels),
+		SampleSize:    4,
+		SampleRate:    self.streamInfo.SampleRate,
+		FrameSize:     self.streamInfo.FrameSize,
+		ContentLength: 0,
 	}
 
 	l := int32(libav.DecodePacket(self.dctx))
 	for l > 0 {
 		numberOfSamples := self.streamInfo.FrameSize * self.streamInfo.Channels
-		decodedSamples := (*(*[1 << 31 - 1]int16)(unsafe.Pointer(self.dctx.Context.Outbuf)))[:numberOfSamples]
+		decodedSamples := (*(*[1<<31 - 1]int16)(unsafe.Pointer(self.dctx.Context.Outbuf)))[:numberOfSamples]
 
 		self.int16ToFloat32(decodedSamples)
 		self.actx.Sink <- self.floatSamples[self.currBuffer]
@@ -128,16 +128,16 @@ func (self *LibAVSource) Start() {
 /**
  * convert intSamples into floatSamples (-1.0 .. 1.0)
  */
-func (self *LibAVSource) int16ToFloat32(intSamples []int16) {	
+func (self *LibAVSource) int16ToFloat32(intSamples []int16) {
 	var (
 		streamOffset int32 = 0
-		i int32
-		j int32
+		i            int32
+		j            int32
 	)
 
 	for i = 0; i < int32(self.streamInfo.FrameSize); i++ {
 		for j = 0; j < self.streamInfo.Channels; j++ {
-			self.floatSamples[self.currBuffer][i][j] = float32(intSamples[streamOffset]) / float32(1 << 15)
+			self.floatSamples[self.currBuffer][i][j] = float32(intSamples[streamOffset]) / float32(1<<15)
 			streamOffset += 1
 		}
 	}

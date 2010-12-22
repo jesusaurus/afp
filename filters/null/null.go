@@ -12,8 +12,8 @@ package null
 import (
 	"afp"
 	"os"
-/*	"sync"
-	"runtime" */
+	/*	"sync"
+		"runtime" */
 )
 //Dummy parent struct, only defines Init/Stop
 type nullFilter struct {

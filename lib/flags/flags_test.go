@@ -22,18 +22,18 @@ func boolString(s string) string {
 }
 
 func TestEverything(t *testing.T) {
-	m := make(map[string] *flags.Flag)
+	m := make(map[string]*flags.Flag)
 	args := []string{"command"}
 	parser := flags.FlagParser(args)
 	var (
-		_  = parser.Bool("test_bool", false, "bool value")
-		_  = parser.Int("test_int", 0, "int value")
-		_  = parser.Int64("test_int64", 0, "int64 value")
-		_  = parser.Uint("test_uint", 0, "uint value")
-		_  = parser.Uint64("test_uint64", 0, "uint64 value")
-		_  = parser.String("test_string", "0", "string value")
-		_  = parser.Float("test_float", 0, "float value")
-		_  = parser.Float("test_float64", 0, "float64 value")
+		_ = parser.Bool("test_bool", false, "bool value")
+		_ = parser.Int("test_int", 0, "int value")
+		_ = parser.Int64("test_int64", 0, "int64 value")
+		_ = parser.Uint("test_uint", 0, "uint value")
+		_ = parser.Uint64("test_uint64", 0, "uint64 value")
+		_ = parser.String("test_string", "0", "string value")
+		_ = parser.Float("test_float", 0, "float value")
+		_ = parser.Float("test_float64", 0, "float64 value")
 	)
 	desired := "0"
 	visitor := func(f *flags.Flag) {
@@ -41,10 +41,10 @@ func TestEverything(t *testing.T) {
 			m[f.Name] = f
 			ok := false
 			switch {
-				case f.Value.String() == desired:
-					ok = true
-				case f.Name == "test_bool" && f.Value.String() == boolString(desired):
-					ok = true
+			case f.Value.String() == desired:
+				ok = true
+			case f.Name == "test_bool" && f.Value.String() == boolString(desired):
+				ok = true
 			}
 			if !ok {
 				t.Error("Visit: bad value", f.Value.String(), "for", f.Name)

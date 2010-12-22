@@ -33,7 +33,7 @@ func InitPipeline(pipelineSpec [][]string, verbose bool) {
 		nextHeaderLink chan afp.StreamHeader
 		ctx            *afp.Context
 	)
-	
+
 	ctx = &afp.Context{
 		Sink:       link,
 		HeaderSink: headerLink,

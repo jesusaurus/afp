@@ -30,4 +30,3 @@ func (self *ExecSource) Start() {
 
 	self.wait()
 }
-
