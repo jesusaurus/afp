@@ -49,13 +49,28 @@ func (self *EchoFilter) Start() {
         for i := 0; i < frameSize; i++ {
             for j := int8(0); j < self.header.Channels; j++ {
                 //ECHO, Echo, echo...
-                buffer[i+1][j] += buffer[i][j] * self.decay
+                //buffer[i+1][j] += buffer[i][j] * self.decay
+                //what do we really want to do here?
+
             }
         }
 
         self.context.Sink <- buffer[0:frameSize]
         buffer = buffer[frameSize:]
         buffer = append(buffer, nextFrame...)
+    }
+
+    //Flush the buffer
+    length = len(buffer)
+    for i := 0; i < length; i++ {
+        //apply echo/reverb
+
+        if i == frameSize {
+            self.context.Sink <- buffer[0:frameSize]
+            buffer = buffer[frameSize:]
+            i = 0
+            length -= frameSize
+        }
     }
 }
 
