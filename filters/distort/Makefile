@@ -6,6 +6,6 @@ include $(GOROOT)/src/Make.inc
 
 TARG=afp/filters/distort
 GOFILES=\
-	distort.go
-
+	distort.go \
+	atan.go
 include $(GOROOT)/src/Make.pkg
