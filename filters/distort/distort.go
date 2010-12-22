@@ -35,11 +35,11 @@ func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 		"Signal gain to apply before clipping. Must be > 0.")
 	fParse.Float32Var(&self.clip, "c", 1.0,
 		"The amplitude at which to clip the signal. Must be in (0,1)")
-	fParse.Float32Var(&self.hardness, "k", 10,
+	fParse.Float32Var(&self.hardness, "h", 10,
 		"Clipping 'hardness' for the variable clipping filter. Must be"+
 			" in [1,\u221E), where 1 is soft clipping and \u221E is hard clipping.")
 	clipType := fParse.String("t",
-		"soft", "The type of clipping used: hard, variable, cubic, or foldback."+
+		"cubic", "The type of clipping used: hard, variable, cubic, or foldback."+
 			" See the afp(1) manpage for more info")
 
 	fParse.Parse()
