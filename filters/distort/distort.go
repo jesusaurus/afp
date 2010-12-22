@@ -7,12 +7,12 @@ package distort
 import (
 	"afp"
 	"afp/flags"
-	"math"
+	"os"
 )
 
 type DistortFilter struct {
 	ctx                  *afp.Context
-	gain, clip, hardness Float32
+	gain, clip, hardness float32
 	clipper              func(*DistortFilter)
 }
 
@@ -33,7 +33,7 @@ func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 		"The amplitude at which to clip the signal. Must be in (0,1)")
 	fParse.Float32Var(&self.hardness, "k", 10,
 		"Clipping 'hardness' for the variable clipping filter. Must be"+
-			" in [1,\u221E), where 1 is no clipping and \u221E is hard clipping.")
+			" in [1,\u221E), where 1 is soft clipping and \u221E is hard clipping.")
 	clipType := fParse.String("t",
 		"soft", "The type of clipping used: hard, variable, cubic, or foldback."+
 			" See the afp(1) manpage for more info")
@@ -48,14 +48,16 @@ func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 		return os.NewError("Clipping level must be between 0 and 1")
 	}
 
-	self.clipper, ok := clipTypes[clipType]
+	tempClipper, ok := clipTypes[*clipType]
 
 	if !ok {
 		return os.NewError("Clipping type must be one of: hard, soft, overflow, or foldback")
 	}
 
-	if clipper != variable && self.hardness < 0 {
-		return os.NewError("Hardness must be in [0,\u221E).")
+	self.clipper = tempClipper
+
+	if self.clipper != variable && self.hardness < 1 {
+		return os.NewError("Hardness must be in [1,\u221E).")
 	}
 
 	return nil
@@ -77,17 +79,17 @@ func (self *DistortFilter) Start() {
 func hard(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
-			for ch, sample := range slice {
-				frame[slice][ch] = hardMin(f.clip, sample*f.gain)
+			for ch, sample := range frame[slice] {
+				frame[slice][ch] = hardMin(f.clip, sample * f.gain)
 			}
 		}
-		self.ctx.Sink <- frame
+		f.ctx.Sink <- frame
 	}
 }
 
 //Min function which knows about hard(). 
 //specifically that clip will always be positive
-func hardMin(clip, sprime float32) {
+func hardMin(clip, sprime float32) float32 {
 	var t float32
 
 	if sprime < 0 {
@@ -106,11 +108,11 @@ func hardMin(clip, sprime float32) {
 func foldback(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
-			for ch, sample := range slice {
+			for ch, sample := range frame[slice] {
 				frame[slice][ch] = fold(sample*f.gain, f.clip)
 			}
 		}
-		self.ctx.Sink <- frame
+		f.ctx.Sink <- frame
 	}
 }
 
@@ -135,11 +137,11 @@ func fold(sample, clip float32) float32 {
 func cubic(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
-			for ch, sample := range slice {
+			for ch, sample := range frame[slice] {
 				frame[slice][ch] = cubicClip(sample*f.gain, f.clip)
 			}
 		}
-		self.ctx.Sink <- frame
+		f.ctx.Sink <- frame
 	}
 }
 
@@ -171,11 +173,11 @@ func variable(f *DistortFilter) {
 
 	for frame := range f.ctx.Source {
 		for slice := range frame {
-			for ch, sample := range slice {
+			for ch, sample := range frame[slice] {
 				frame[slice][ch] = hardnessMult * atan(sample*f.hardness)
 			}
 		}
-		self.ctx.Sink <- frame
+		f.ctx.Sink <- frame
 	}
 }
 
