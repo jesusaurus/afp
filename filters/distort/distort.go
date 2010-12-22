@@ -11,32 +11,33 @@ import (
 )
 
 type DistortFilter struct {
-	ctx *afp.Context
-    gain, clip, hardness Float32
-    clipper func(*DistortFilter)
+	ctx                  *afp.Context
+	gain, clip, hardness Float32
+	clipper              func(*DistortFilter)
 }
 
-var clipTypes = map[string]func(*DistortFilter) {
-    "hard" : hard,
-	"variable" : variable,
-	"cubic" : cubic,
-	"foldback" : foldback,
+var clipTypes = map[string]func(*DistortFilter){
+	"hard":     hard,
+	"variable": variable,
+	"cubic":    cubic,
+	"foldback": foldback,
 }
 
 func (self *DistortFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
-    fParse := flags.FlagParser(args)
+	fParse := flags.FlagParser(args)
 	fParse.Float32Var(&self.gain, "g", 1.0,
 		"Signal gain to apply before clipping. Must be > 0.")
-    fParse.Float32Var(&self.clip, "c", 1.0,
-        "The amplitude at which to clip the signal. Must be in (0,1)")
+	fParse.Float32Var(&self.clip, "c", 1.0,
+		"The amplitude at which to clip the signal. Must be in (0,1)")
 	fParse.Float32Var(&self.hardness, "k", 10,
-			"Clipping 'hardness' for the variable clipping filter. Must be" +
+		"Clipping 'hardness' for the variable clipping filter. Must be"+
 			" in [1,\u221E), where 1 is no clipping and \u221E is hard clipping.")
-	clipType := fParse.String("t", 
-		"soft", "The type of clipping used: hard, variable, cubic, or foldback.")
-	
+	clipType := fParse.String("t",
+		"soft", "The type of clipping used: hard, variable, cubic, or foldback."+
+			" See the afp(1) manpage for more info")
+
 	fParse.Parse()
 
 	if self.gain <= 0 {
@@ -77,7 +78,7 @@ func hard(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
 			for ch, sample := range slice {
-				frame[slice][ch] = hardMin(f.clip, sample * f.gain)
+				frame[slice][ch] = hardMin(f.clip, sample*f.gain)
 			}
 		}
 		self.ctx.Sink <- frame
@@ -94,7 +95,7 @@ func hardMin(clip, sprime float32) {
 	} else {
 		t = sprime
 	}
-	
+
 	if t > clip {
 		return clip
 	}
@@ -106,7 +107,7 @@ func foldback(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
 			for ch, sample := range slice {
-				frame[slice][ch] = fold(sample * f.gain, f.clip)
+				frame[slice][ch] = fold(sample*f.gain, f.clip)
 			}
 		}
 		self.ctx.Sink <- frame
@@ -115,13 +116,13 @@ func foldback(f *DistortFilter) {
 
 //Helper function for foldback
 //Computes the actual value of a sample
-func fold(sample, clip float32) float32 {	
-	
+func fold(sample, clip float32) float32 {
+
 	//A single fold may cause the signal to exceed the clip level 
 	//on the other side, so we may need to fold multiple times
 	for sample > clip || sample < -clip {
 		if sample > clip {
-			sample = 2 * clip - sample
+			sample = 2*clip - sample
 		} else {
 			sample = clip + sample
 		}
@@ -131,12 +132,11 @@ func fold(sample, clip float32) float32 {
 }
 
 
-
 func cubic(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
 			for ch, sample := range slice {
-				frame[slice][ch] = cubicClip(sample * f.gain, f.clip)
+				frame[slice][ch] = cubicClip(sample*f.gain, f.clip)
 			}
 		}
 		self.ctx.Sink <- frame
@@ -154,7 +154,7 @@ func cubicClip(sample, clip float32) float32 {
 	} else if sample <= -clip {
 		sample = -0.66666666666666666666666 * clip
 	} else {
-		sample = sample - sample * sample * sample / 3
+		sample = sample - sample*sample*sample/3
 	}
 	return sample
 }
@@ -172,7 +172,7 @@ func variable(f *DistortFilter) {
 	for frame := range f.ctx.Source {
 		for slice := range frame {
 			for ch, sample := range slice {
-				frame[slice][ch] = hardnessMult * atan(sample * f.hardness)
+				frame[slice][ch] = hardnessMult * atan(sample*f.hardness)
 			}
 		}
 		self.ctx.Sink <- frame
@@ -183,22 +183,5 @@ func variable(f *DistortFilter) {
 //in [-2,2].  Thanks to antiprosynthesis[AT]hotmail[DOT]com
 //Not used at this time.
 func fastAtan(x float32) float32 {
-	return x / (1 + .28 * x * x)
-}
-
-//Original C version by Alexander Kritov 
-//http://www.musicdsp.org/archive.php?classid=1#68  
-func soft(x, a, N, fi float32) {
-    var (
-        s1 = pow(a, N-1.0) * sin((N - 1.0) * x + fi)
-        s2 = pow(a, N) * sin(N * x + fi)
-        s3 = a * sin(x + fi)
-        s4 = 1.0 - (2 * a * cos(x)) + (a * a)
-    )
-
-    if s4 == 0 {
-        return 0;
-    } else {
-        return (sin(fi) - s3 - s2 +s1) / s4;
-    }
+	return x / (1 + .28*x*x)
 }
