@@ -5,23 +5,23 @@
 package main
 
 import (
-//	"afp"
-//	"os/signal"
+	//	"afp"
+	//	"os/signal"
 	"log"
 	"os"
-	)
+)
 
-var pipespec [][]string = [][]string{{"libavsource","-i","/tmp/test.mp3"},{"stdoutsink"}}
+var pipespec [][]string = [][]string{{"libavsource", "-i", "/tmp/test.mp3"}, {"stdoutsink"}}
 
 const CHAN_BUF_LEN = 16
 
 var (
 	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
 
-	errors *log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
-	info *log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
-	verbose bool = false
-	)
+	errors  *log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
+	info    *log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
+	verbose bool        = false
+)
 
 
 func main() {
@@ -35,4 +35,3 @@ func main() {
 		}
 	}
 }
-

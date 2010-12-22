@@ -27,6 +27,6 @@ func (self *ExecSink) Start() {
 	if self.context.Verbose {
 		go self.errors()
 	}
-	
+
 	self.wait()
 }

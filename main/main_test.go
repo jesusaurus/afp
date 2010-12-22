@@ -6,7 +6,7 @@ package main_test
 
 import (
 	"testing"
-// 	"main"
+	// 	"main"
 )
 
 
@@ -15,7 +15,7 @@ func TestEmptyPipeline(t *testing.T) {
 	mainArgs, stages := main.ParsePipeline(args)
 	if len(stages) != 0 {
 		t.Errorf("Empty pipeline returned %d stages",
-				len(stages))
+			len(stages))
 	}
 	if len(mainArgs) != 0 {
 		t.Errorf("Empty pipeline returned %d main flags",

@@ -8,17 +8,16 @@ package fightclub
 import "C"
 
 import (
-    "fmt"
-    "os"
+	"fmt"
+	"os"
 )
 
 func Write(toWrite string) {
 
-    var x = C.WriteOut( C.CString(toWrite) )
-    if x == 0 {
-        fmt.Fprintln(os.Stderr, ":)\n")
-    } else {
-        fmt.Fprintln(os.Stderr, ":(\n")
-    }
+	var x = C.WriteOut(C.CString(toWrite))
+	if x == 0 {
+		fmt.Fprintln(os.Stderr, ":)\n")
+	} else {
+		fmt.Fprintln(os.Stderr, ":(\n")
+	}
 }
-

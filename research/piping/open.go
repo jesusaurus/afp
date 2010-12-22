@@ -7,5 +7,5 @@ package main
 import "fightclub"
 
 func main() {
-    fightclub.Open("test.in")
+	fightclub.Open("test.in")
 }

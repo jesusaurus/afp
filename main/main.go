@@ -16,15 +16,15 @@ import (
 const CHAN_BUF_LEN = 16
 
 var (
-	Pipeline []*FilterWrapper = make([]*FilterWrapper, 0, 100)
-	pipelineLock *sync.Mutex = &sync.Mutex{}
+	Pipeline     []*FilterWrapper = make([]*FilterWrapper, 0, 100)
+	pipelineLock *sync.Mutex      = &sync.Mutex{}
 
 
-	errors   *log.Logger      = log.New(os.Stderr, "[E] ", log.Ltime)
-	info     *log.Logger      = log.New(os.Stderr, "[I] ", log.Ltime)
-	verbose  bool
+	errors    *log.Logger = log.New(os.Stderr, "[E] ", log.Ltime)
+	info      *log.Logger = log.New(os.Stderr, "[I] ", log.Ltime)
+	verbose   bool
 	debugging bool
-	specFile string
+	specFile  string
 )
 
 func init() {

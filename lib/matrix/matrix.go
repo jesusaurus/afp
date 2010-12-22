@@ -2,7 +2,7 @@ package matrix
 
 /**
  * Given a slice of samples, returns a slice of channels, or visa-versa
- */ 
+ */
 func Invert(frame [][]float32) [][]float32 {
 	out := make([][]float32, len(frame[0]))
 

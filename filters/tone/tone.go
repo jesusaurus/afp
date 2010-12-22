@@ -17,7 +17,7 @@ import (
 
 const (
 	FRAME_SIZE = 4096
-	TONE_SINE = iota
+	TONE_SINE  = iota
 	TONE_SAW
 	TONE_SQUARE
 )
@@ -25,12 +25,12 @@ const (
 
 type ToneSource struct {
 	context *afp.Context
-	header afp.StreamHeader
+	header  afp.StreamHeader
 
-	toneType int
+	toneType      int
 	toneFrequency float32
 	toneAmplitude float32
-	toneLength float32
+	toneLength    float32
 }
 
 
@@ -55,10 +55,10 @@ func (self *ToneSource) GetType() int {
  */
 
 func (self *ToneSource) Init(ctx *afp.Context, args []string) os.Error {
-	var err os.Error;
-	
+	var err os.Error
+
 	self.context = ctx
-	
+
 	parser := flags.FlagParser(args)
 	var toneType *string = parser.String("t", "sine", "Type of tone to generate: sine, saw, square (sine)")
 	var freq *float = parser.Float("f", 440.0, "The frequency of the tone to generate")
@@ -67,14 +67,14 @@ func (self *ToneSource) Init(ctx *afp.Context, args []string) os.Error {
 	var channels *int = parser.Int("c", 2, "The number of channels to generate")
 	var rate *int = parser.Int("r", 44100, "The sampling rate of the output")
 	parser.Parse()
-	
-/*	dumpConfig(*toneType, *freq, *amp, *len, *channels, *rate)*/
-	
+
+	/*	dumpConfig(*toneType, *freq, *amp, *len, *channels, *rate)*/
+
 	self.toneType, err = mapToneType(*toneType)
 	self.toneFrequency = float32(*freq)
 	self.toneAmplitude = float32(*amp)
 	self.toneLength = float32(*len)
-	
+
 	self.header.Version = 1
 	self.header.Channels = int8(*channels)
 	self.header.SampleSize = 4
@@ -99,33 +99,33 @@ func dumpConfig(toneType string, freq float, amp float, len float, channels int,
  */
 
 func mapToneType(toneName string) (int, os.Error) {
-	var toneMap map[string]int = map[string]int {
-		"sine"		: TONE_SINE,
-		"saw"		: TONE_SAW,
-		"square"	: TONE_SQUARE,
+	var toneMap map[string]int = map[string]int{
+		"sine":   TONE_SINE,
+		"saw":    TONE_SAW,
+		"square": TONE_SQUARE,
 	}
 	return toneMap[toneName], nil
 }
 
 func (self *ToneSource) Start() {
-	self.context.HeaderSink <- self.header;
-	
+	self.context.HeaderSink <- self.header
+
 	var (
-		s int64					/* sample */
-		t float64				/* time */
-		fo int32 = 0			/* frame offset */
-		c int8					/* channel iterator */
+		s      int64            /* sample */
+		t      float64          /* time */
+		fo     int32        = 0 /* frame offset */
+		c      int8             /* channel iterator */
 		buffer *[][]float32 = makeBuffer(self.header.FrameSize, self.header.Channels)
 	)
-	
-	for s = 0; s < int64(self.toneLength * float32(self.header.SampleRate)); s++ {
+
+	for s = 0; s < int64(self.toneLength*float32(self.header.SampleRate)); s++ {
 		t = float64(s) / float64(self.header.SampleRate)
-		
+
 		for c = 0; c < self.header.Channels; c++ {
-			(*buffer)[fo][c] = float32(math.Sin(t * 2.0 * math.Pi * float64(self.toneFrequency))) * self.toneAmplitude
+			(*buffer)[fo][c] = float32(math.Sin(t*2.0*math.Pi*float64(self.toneFrequency))) * self.toneAmplitude
 		}
 		fo++
-		
+
 		if fo == self.header.FrameSize {
 			self.context.Sink <- *buffer
 
@@ -133,7 +133,7 @@ func (self *ToneSource) Start() {
 			fo = 0
 		}
 	}
-	
+
 	if fo != self.header.FrameSize {
 		fo += 1
 		for fo < self.header.FrameSize {
@@ -148,10 +148,10 @@ func (self *ToneSource) Start() {
 
 func makeBuffer(size int32, channels int8) *[][]float32 {
 	b := make([][]float32, size)
-	for i,_ := range(b) {
+	for i, _ := range b {
 		b[i] = make([]float32, channels)
 	}
-	
+
 	return &b
 }
 

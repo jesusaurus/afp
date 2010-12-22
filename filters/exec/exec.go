@@ -14,12 +14,12 @@ import (
 )
 
 type execFilter struct {
-	context *afp.Context
-	filter *exec.Cmd
-	header *afp.StreamHeader
+	context    *afp.Context
+	filter     *exec.Cmd
+	header     *afp.StreamHeader
 	endianness binary.ByteOrder
 	commErrors chan os.Error
-	finished chan int
+	finished   chan int
 }
 
 func (self *execFilter) Stop() os.Error {
@@ -43,7 +43,7 @@ func (self *execFilter) Init(ctx *afp.Context, args []string) os.Error {
 	if err != nil {
 		return err
 	}
-	
+
 	self.endianness = binary.LittleEndian //Move this to a flag in the future 
 	self.context = ctx
 	self.commErrors = make(chan os.Error)
@@ -59,7 +59,8 @@ func (self *execFilter) write(v interface{}) {
 		//The afp infrastructure will receive the error and shutdown
 		//The pipeline, killing the cmd in the process.
 		self.commErrors <- err
-		select{}
+		select {
+		}
 	}
 }
 
@@ -85,7 +86,8 @@ func (self *execFilter) read(v interface{}) {
 	err := binary.Read(self.filter.Stdin, self.endianness, v)
 	if err == os.EOF {
 		self.commErrors <- err
-		select{}
+		select {
+		}
 	}
 }
 
@@ -97,7 +99,8 @@ func (self *execFilter) decoder() {
 	self.read(&length)
 	if length != afp.HEADER_LENGTH {
 		self.commErrors <- os.NewError("Header not the right length")
-		select{}
+		select {
+		}
 	}
 	self.read(&OutHeader.Version)
 	self.read(&OutHeader.Channels)
@@ -113,11 +116,11 @@ func (self *execFilter) decoder() {
 	chans := int32(OutHeader.Channels)
 
 	for {
-		rawFrame := make([]float32, chans * OutHeader.FrameSize)
+		rawFrame := make([]float32, chans*OutHeader.FrameSize)
 		self.read(rawFrame)
 
-		for i, slice := int32(0), 0; i < OutHeader.FrameSize / chans; slice++ {
-			frame[slice] = rawFrame[i:i + chans]
+		for i, slice := int32(0), 0; i < OutHeader.FrameSize/chans; slice++ {
+			frame[slice] = rawFrame[i : i+chans]
 			i += chans
 		}
 	}
@@ -133,13 +136,13 @@ func (self *execFilter) errors() {
 
 func (self *execFilter) wait() {
 	select {
-	case <-self.finished :
+	case <-self.finished:
 		if self.context.Sink != nil {
 			close(self.context.Sink)
 		}
 		self.filter.Wait(0)
 		return
-	case err := <-self.commErrors :
+	case err := <-self.commErrors:
 		syscall.Kill(self.filter.Pid, syscall.SIGTERM)
 		self.filter.Wait(0)
 		panic(err)
