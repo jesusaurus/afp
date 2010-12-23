@@ -50,7 +50,6 @@ func (self *NullSource) Start() {
 		SampleRate:    0,
 		ContentLength: 0,
 	}
-	close(self.ctx.Sink)
 }
 
 type NullSink struct {
