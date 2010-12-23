@@ -5,43 +5,42 @@
 //This is not a legal Go program, rather it provides a skeletal
 //filter to serve as a minimal base for developing filters.
 
-package <packagename>
+package buffer
 
 import (
 	"afp"
+	"afp/lib/util"
 	"os"
 )
 
-type SkeletonFilter struct {
+type BufferFilter struct {
 	ctx *afp.Context
 }
 
-func (self *SkeletonFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *BufferFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
 	return nil
 }
 
-func (self *SkeletonFilter) Stop() os.Error {
+func (self *BufferFilter) Stop() os.Error {
 	return nil
 }
 
-func (self *SkeletonFilter) GetType() int {
+func (self *BufferFilter) GetType() int {
 	return afp.PIPE_< SOURCE | LINK | SINK >
 }
 
-func (self *SkeletonFilter) Start() {
-	//The first thing Start should do is store
-	//and pass on the header info.
+func (self *BufferFilter) Start() {
 	header := <-self.ctx.HeaderSource
 	self.ctx.HeaderSink <- header
 
 	for frame := range self.ctx.Source {
-		//Process frame
+
 	}
 }
 
-func NewSkeleton() afp.Filter {
-	return &SkeletonFilter{}
+func NewBuffer() afp.Filter {
+	return &BufferFilter{}
 }
 
