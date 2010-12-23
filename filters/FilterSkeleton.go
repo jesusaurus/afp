@@ -19,6 +19,10 @@ type SkeletonFilter struct {
 func (self *SkeletonFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
+	parser := flags.FlagParser(args)
+	var a *int = parser.Int("a", DEFAULT_VALUE, "Argument Description")
+	parser.Parse()
+
 	return nil
 }
 
