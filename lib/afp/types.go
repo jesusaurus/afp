@@ -9,6 +9,8 @@ import (
 	"log"
 )
 
+const CHAN_BUF_LEN = 64
+
 //Constants to specify the type of a given filter
 const (
 	PIPE_SOURCE = iota
