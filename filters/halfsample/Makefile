@@ -4,8 +4,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=afp/filters/myfilter
+TARG=afp/filters/halfsample
 GOFILES=\
-		downsample.go
+		halfsample.go
 
 include $(GOROOT)/src/Make.pkg
