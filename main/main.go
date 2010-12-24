@@ -11,6 +11,7 @@ import (
 	"afp/flags"
 	"sync"
 	"syscall"
+	"runtime"
 )
 
 const CHAN_BUF_LEN = 16
@@ -29,6 +30,7 @@ var (
 
 func init() {
 	go SigHandler()
+	runtime.GOMAXPROCS(32)
 }
 
 func main() {
