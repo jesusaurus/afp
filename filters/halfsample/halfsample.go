@@ -12,7 +12,7 @@ import (
 
 type Halfsampler struct {
 	ctx *afp.Context
-	downsampler func([][]float32) [][]float32
+	downsampler func([]float32, [][]float32) [][]float32
 }
 
 func (self *Halfsampler) Init(ctx *afp.Context, args []string) os.Error {
@@ -33,6 +33,8 @@ func (self *Halfsampler) Init(ctx *afp.Context, args []string) os.Error {
 	} else {
 		self.downsampler = expDS
 	}
+	
+	return nil
 }
 
 func (self *Halfsampler) Stop() os.Error {
@@ -45,39 +47,51 @@ func (self *Halfsampler) GetType() int {
 
 func (self *Halfsampler) Start() {
 	header := <-self.ctx.HeaderSource
+
+	//Do we need to be slightly more clever here?
 	headerCopy := header
 	headerCopy.SampleRate = header.SampleRate / 2
 	headerCopy.FrameSize = header.FrameSize / 2
+
+	//We may not be able to know resulting content length
+	//Is this necessarily true?
+	headerCopy.ContentLength = 0 
+
 	self.ctx.HeaderSink <- headerCopy
 
-	//Then process the content til there's no more to be had
+	carryOver := make([]float32, header.Channels)
+
 	for frame := range self.ctx.Source {
-		//Process frame
+		self.ctx.Sink <- self.downsampler(carryOver, frame)
 	}
 }
 
 func NewHalfsampler() afp.Filter {
 	return &Halfsampler{}
 }
-/*
-int filter_state;
 
-void downsample( int *input_buf, int *output_buf, int output_count ) {
-    int input_idx, input_end, output_idx, output_sam;
-    input_idx = output_idx = 0;
-    input_end = output_count * 2;
-    while( input_idx < input_end ) {
-        output_sam = filter_state + ( input_buf[ input_idx++ ] >> 1 );
-        filter_state = input_buf[ input_idx++ ] >> 2;
-        output_buf[ output_idx++ ] = output_sam + filter_state;
-    }
+//This algorithm adapted from mumart[AT]gmail[DOT]com
+//Found at http://www.musicdsp.org/showArchiveComment.php?ArchiveID=214
+func linearDS(carryOver []float32, input [][]float32) [][]float32 {
+    var outSample float32
+	outBuff := input[:len(input / 2)]
+
+    for i, outInd := 0, 0; i < len(input); outInd++ {
+		for j := range input[i] {
+			output_sam =  carryOver[j] + input[i][j] / 2
+			i++
+			
+			carryOver[j] = input[i][j] / 2;
+			i++
+			
+			outBuff[outInd][j] = output_sam + carryOver[j]
+		}
+	}
 }
-*/
 
-/*
-int filter_state;
-
-void downsample( int *input_buf, int *output_buf, int output_count ) {
+//This algorithm adapted from mumart[AT]gmail[DOT]com
+//Found at http://www.musicdsp.org/showArchiveComment.php?ArchiveID=214
+func expDS( int *input_buf, int *output_buf, int output_count ) {
     int input_idx, output_idx, input_ep1;
     output_idx = 0;
     input_idx = 0;
