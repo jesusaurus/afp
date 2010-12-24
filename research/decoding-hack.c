@@ -83,6 +83,21 @@ static void audio_decode_example(const char *filename, const char *outfilename)
         fprintf(stderr, "av_find_stream_info: error %d\n", err);
         exit(1);
     }
+
+	for (i = 0; i < fctx->nb_streams; i++) {
+		AVStream *st = fctx->streams[i];
+        AVCodecContext *dec = st->codec;
+        
+        int audio_channels    = dec->channels;
+        int audio_sample_rate = dec->sample_rate;
+        enum AVSampleFormat audio_sample_fmt  = dec->sample_fmt;
+        
+		fprintf(stderr, "channels: %d sample_rate: %d frame_size: %d\n", audio_channels, audio_sample_rate, dec->frame_size);
+		
+	}
+
+	fprintf(stderr, "AVERROR(EAGAIN): %d\n", AVERROR(EAGAIN));
+
 	dump_format(fctx, 0, filename, 0);
 	
 	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
