@@ -133,27 +133,15 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
     /* set up Info context */
 	context->Info.Content_length = 0;
 
-	// FIXME: this will only work for mp3 files :(
-		int bit_rot;
-		uint32_t head = AV_RB32(context->Packet.data);
-		err = ff_mpa_decode_header(context->Cctx,
-			head,
-			&context->Info.Sample_rate,
-			&context->Info.Channels,
-			&context->Info.Frame_size,
-			&bit_rot);
+	AVStream *st = context->Fctx->streams[0];
+    AVCodecContext *dec = st->codec;
 
-		MPADecodeHeader s1, *s = &s1;
-		if (err < 0) {
-			fprintf(stderr, "Error from ff_mpa_decode_header: %d\n", err);
-			fprintf(stderr, "ff_mpa_check_header: %d\n", ff_mpa_check_header(head));
-			fprintf(stderr, "ff_mpegaudio_decode_header: %d\n", ff_mpegaudio_decode_header(s, head));
-
-			return -1;
-		}
-	// FIXME
+	context->Info.Sample_rate = dec->sample_rate;
+	context->Info.Channels = dec->channels;
+	context->Info.Frame_size = dec->frame_size;
 
 #ifdef AVCORE_SAMPLEFMT_H
+	/* we can rely on the new AV_SAMPLE_FMT_* from avcore/samplefmt.h */
 	switch(context->Cctx->sample_fmt) {
 	    case AV_SAMPLE_FMT_U8:          ///< unsigned 8 bits
 			sample_size = 1;
@@ -169,12 +157,24 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 			return -1;
 	}
 #else
-	sample_size = 2;
+	/* use SAMPLE_FMT_* from avcodec/avcodec.h */
+	switch(context->Cctx->sample_fmt) {
+	    case SAMPLE_FMT_U8:          ///< unsigned 8 bits
+			sample_size = 1;
+			break;
+	    case SAMPLE_FMT_S16:         ///< signed 16 bits
+			sample_size = 2;
+			break;
+	    case SAMPLE_FMT_S32:         ///< signed 32 bits
+			sample_size = 4;
+			break;
+		default:
+			fprintf(stderr, "Unsupported sample format: %d\n", context->Cctx->sample_fmt);
+			return -1;
+	}
 #endif
 	context->Info.Sample_size = sample_size;
-
 	context->first_frame_used = 0;
-	context->Info.Frame_size = len / context->Info.Channels / context->Info.Sample_size;
 
 	return 0;
 }

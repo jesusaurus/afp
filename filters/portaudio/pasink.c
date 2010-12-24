@@ -167,7 +167,7 @@ int init_portaudio_output(int channels, int sample_rate, int frame_size, pa_outp
               &outputParameters,
               sample_rate,
               frame_size,
-              paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+              paNoFlag,      /* clip samples! */
               pa_output_callback,
               data );
     if( err != paNoError ) goto error;
