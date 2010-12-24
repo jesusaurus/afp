@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+#Copyright (c) 2010 AFP Authors
+#This source code is released under the terms of the
+#MIT license. Please see the file LICENSE for license details.
+
+for F in `find . -maxdepth 1 -mindepth 1 -type d`; do
+	cd $F
+	gomake clean
+	cd ..
+done
