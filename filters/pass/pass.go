@@ -8,9 +8,12 @@ import (
 	"afp"
 	"afp/flags"
 	"afp/fftw"
-    matrix "afp/lib/util"
+	"afp/matrix"
+	"afp/window"
 	"os"
 )
+
+const DEBUG = true
 
 type LowPassFilter struct {
 	context               *afp.Context
@@ -50,27 +53,51 @@ func (self *LowPassFilter) Start() {
 }
 
 func (self *LowPassFilter) process() {
+	N := int(self.header.FrameSize * int32(self.header.Channels))
+	
+	b := make([][]float32, 2)
+	b[0] = make([]float32, 0)
+	b[1] = make([]float32, 0)
+	bn := 0
+	
+	w0, w1, wd := 0, int(self.header.FrameSize), int(self.header.FrameSize / 2)
+	
 	// loop over all input data
 	for audio := range self.context.Source {
 
 		interleaved := matrix.Interleave(audio)
+		b[1 - bn] = append(b[bn], interleaved...)
+		bn = 1 - bn
 		
-		_ = fftw.RealToReal1D_32(interleaved, true, 3, fftw.MEASURE, fftw.R2HC)
+		window := window.Hann(b[bn][w0:w1-1])
 		
-/*		for f, _ := range(interleaved) {
-			if f < 60 {
-				interleaved[f] = 0
-			}
+		println("Windowed:")
+		for _, amp := range(window) {
+			print(amp, " ")
 		}
-*/		
-		_ = fftw.RealToReal1D_32(interleaved, true, 3, fftw.MEASURE, fftw.HC2R)
+		println(); println();
 		
-		for t, amp := range(interleaved) {
-			interleaved[t] = amp/float32(512 * len(audio) * len(audio[0]))
-/*			print(interleaved[t], " ")*/
-		}
+		_ = fftw.RealToReal1D_32(window, true, 3, fftw.MEASURE, fftw.R2HC)
 
-		deinterleaved := matrix.Deinterleave(interleaved, len(audio), len(audio[0]))
+		println("Spectral:")
+		for f, _ := range(window) {
+			print(window[f], " ")
+		}
+		println(); println();
+		
+		_ = fftw.RealToReal1D_32(window, true, 3, fftw.MEASURE, fftw.HC2R)
+		
+		println("Temporal:")
+		for t, amp := range(window) {
+			interleaved[t] = amp/float32(N)
+			print(interleaved[t], " ")
+		}
+		println(); println();
+
+		deinterleaved := matrix.Deinterleave(interleaved, int(self.header.FrameSize), int(self.header.Channels))
+		
+		// increment window interval
+		w0, w1 = w0 + wd, w1 + wd
 
 		// send the mixed audio down the pipe
 		self.context.Sink <- deinterleaved
@@ -81,3 +108,4 @@ func (self *LowPassFilter) process() {
 func (self *LowPassFilter) Stop() os.Error {
 	return nil
 }
+
