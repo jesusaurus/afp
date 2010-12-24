@@ -2,9 +2,6 @@
 // This source code is released under the terms of the
 // MIT license. Please see the file LICENSE for license details.
 
-//This is not a legal Go program, rather it provides a skeletal
-//filter to serve as a minimal base for developing filters.
-
 package buffer
 
 import (
