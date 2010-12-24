@@ -8,7 +8,7 @@ import (
 	"afp"
 	"afp/flags"
 	"afp/fftw"
-	"afp/matrix"
+    matrix "afp/lib/util"
 	"os"
 )
 
