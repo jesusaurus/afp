@@ -25,7 +25,10 @@ func Buffer(n int, source <-chan [][]float32) <-chan [][]float32 {
 
 	for s := range source {
 		buff <- s
-
+		buffered++
+		
+		println(buffered)
+		
 		if buffered >= n {
 			break
 		}
