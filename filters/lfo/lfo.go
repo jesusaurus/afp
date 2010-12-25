@@ -2,10 +2,7 @@
 // This source code is released under the terms of the
 // MIT license. Please see the file LICENSE for license details.
 
-//This is not a legal Go program, rather it provides a skeletal
-//filter to serve as a minimal base for developing filters.
-
-package <packagename>
+package lfo
 
 import (
 	"afp"
@@ -13,41 +10,40 @@ import (
 	"os"
 )
 
-type SkeletonFilter struct {
+type LFOFilter struct {
 	ctx *afp.Context
 }
 
-func (self *SkeletonFilter) Init(ctx *afp.Context, args []string) os.Error {
+func (self *LFOFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
 	parser := flags.FlagParser(args)
-	a := parser.Int("a", DEFAULT_VALUE, "Argument Description")
+	f := parser.Float32("f", 10, "The frequency of the signal to mix in (in Hz).")
+	a := parser.Float32("a", 0.5, "The amplitude of the signal to mix in.  Between 0 and 1.")
 	parser.Parse()
 
 	return nil
 }
 
-func (self *SkeletonFilter) Stop() os.Error {
+func (self *LFOFilter) Stop() os.Error {
 	return nil
 }
 
-func (self *SkeletonFilter) GetType() int {
-	return afp.PIPE_< SOURCE | LINK | SINK >
+func (self *LFOFilter) GetType() int {
+	return afp.PIPE_LINK
 }
 
-func (self *SkeletonFilter) Start() {
-	//The first thing Start should do is store
-	//and pass on the header info.
+func (self *LFOFilter) Start() {
 	header := <-self.ctx.HeaderSource
 	self.ctx.HeaderSink <- header
 
-	//Then process the content til there's no more to be had
 	for frame := range self.ctx.Source {
-		//Process frame
+
+		self.ctx.Sink <- frame
 	}
 }
 
-func NewSkeleton() afp.Filter {
-	return &SkeletonFilter{}
+func NewLFO() afp.Filter {
+	return &LFOFilter{}
 }
 
