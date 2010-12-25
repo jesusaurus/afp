@@ -44,6 +44,7 @@ func (self *SkeletonFilter) Start() {
 	//Then process the content til there's no more to be had
 	for frame := range self.ctx.Source {
 		//Process frame
+		self.ctx.Sink <- frame
 	}
 }
 
