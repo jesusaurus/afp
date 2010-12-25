@@ -24,8 +24,8 @@ const HEADER_LENGTH = (
 	1 + // SampleSize
 	4 + // SampleRate
 	4 + // FrameSize
-	8 // ContentLength
-)
+	8) // ContentLength
+
 type StreamHeader struct {
 	Version       int8
 	Channels      int8
