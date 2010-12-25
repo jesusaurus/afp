@@ -35,13 +35,13 @@ type NullSource struct {
 }
 
 func NewNullSource() afp.Filter {
-	return &NullSource{nullFilter{}}
+	return &NullSource{nullFilter : nullFilter{}}
 }
 
 func (self *NullSource) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
 
-	parser := flags.NewParser(args)
+	parser := flags.FlagParser(args)
 	parser.IntVar(&self.time, "t", 10, "Time in seconds of silence to output")
 	parser.IntVar(&self.samplerate, "s", 44100, "Sample rate to output.")
 	parser.IntVar(&self.framesize, "f", 256, "Frame size to output.")
@@ -65,18 +65,40 @@ func (self *NullSource) Init(ctx *afp.Context, args []string) os.Error {
 	}
 
 	return nil
+}
 
 func (self *NullSource) GetType() int {
 	return afp.PIPE_SOURCE
 }
 
 func (self *NullSource) Start() {
+	length := int64(self.time) * int64(self.samplerate) //Overflow paranoia
+
 	self.ctx.HeaderSink <- afp.StreamHeader{
-		Version:       1,
-		Channels:      1,
-		SampleSize:    0,
-		SampleRate:    0,
-		ContentLength: 0,
+	Version:       1,
+	Channels:      int8(self.channels),
+	SampleSize:    4,
+	SampleRate:    int32(self.samplerate),
+	FrameSize:     int32(self.framesize),
+	ContentLength: length,
+	}
+
+	frames := length / int64(self.framesize)
+	if length % int64(self.framesize) != 0 {
+		frames++
+	}
+		
+	for i := int64(0); i < frames; i++ {
+		raw := make([]float32, self.framesize * self.channels)
+		f := make([][]float32, self.framesize)
+
+		for i, s, e := 0, 0, self.channels; i < self.framesize; i++ {
+			f[i] = raw[s:e]
+			s = e
+			e += self.channels
+		}
+
+		self.ctx.Sink <- f
 	}
 }
 
