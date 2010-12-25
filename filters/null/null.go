@@ -3,7 +3,7 @@
 // MIT license. Please see the file LICENSE for license details.
 //
 // The null package defines a set of filters which do nothing, mostly for testing purposes
-// NullSource: Close without passing any data through the pipeline
+// NullSource: Output silence
 // NullLink: Pass data straight through without processing
 // NullSink: Discard all data
 
@@ -12,8 +12,7 @@ package null
 import (
 	"afp"
 	"os"
-	/*	"sync"
-		"runtime" */
+	"afp/flags"
 )
 //Dummy parent struct, only defines Init/Stop
 type nullFilter struct {
@@ -32,11 +31,40 @@ func (self *nullFilter) Stop() os.Error {
 
 type NullSource struct {
 	nullFilter
+	time, samplerate, framesize, channels int
 }
 
 func NewNullSource() afp.Filter {
 	return &NullSource{nullFilter{}}
 }
+
+func (self *NullSource) Init(ctx *afp.Context, args []string) os.Error {
+	self.ctx = ctx
+
+	parser := flags.NewParser(args)
+	parser.IntVar(&self.time, "t", 10, "Time in seconds of silence to output")
+	parser.IntVar(&self.samplerate, "s", 44100, "Sample rate to output.")
+	parser.IntVar(&self.framesize, "f", 256, "Frame size to output.")
+	parser.IntVar(&self.channels, "c", 2, "Number of channels in output signal")
+	parser.Parse()
+
+	if self.time < 0 {
+		os.NewError("Time must be greater than 0.")
+	}
+
+	if self.samplerate < 1 {//This should probably be higher
+		os.NewError("Sample rate must be at least 1.")
+	}
+
+	if self.framesize < 1 {
+		os.NewError("Frame size must be at least 1.")
+	}
+
+	if self.channels < 1 {	
+		os.NewError("Channels must be at least 1.")
+	}
+
+	return nil
 
 func (self *NullSource) GetType() int {
 	return afp.PIPE_SOURCE
