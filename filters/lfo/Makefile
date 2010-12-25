@@ -4,9 +4,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=afp/filters/myfilter
+TARG=afp/filters/lfo
 GOFILES=\
-		foo.go\
-		bar.go
+		lfo.go
 
 include $(GOROOT)/src/Make.pkg
