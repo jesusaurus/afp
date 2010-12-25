@@ -15,9 +15,23 @@ type LFOFilter struct {
 	ctx *afp.Context
 	amp, freq float32
 	mixchan int
+	oscGen func(*afp.StreamHeader) func() float32 //Ooogly
 }
 
-var chArgToVal = map[string]int { "all" : -1, "left" : 0, "right" : 1 }
+const ALL = -1
+
+var chStrToVal = map[string]int { "all" : ALL, "left" : 0, "right" : 1 }
+
+var oscStrToVal = map[string]func(*afp.StreamHeader) func() float32 {
+	"tri" : getTriangleOscillator,
+	"triangle" : getTriangleOscillator,
+	"sin" : getSinOscillator,
+	"sine" : getSinOscillator,
+	"square" : getSquareOscillator,
+	"sqr" : getSquareOscillator,
+	"sawtoothe" : getSawOscillator,
+	"saw" : getSawOscillator,	
+}
 
 func (self *LFOFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
@@ -27,6 +41,8 @@ func (self *LFOFilter) Init(ctx *afp.Context, args []string) os.Error {
 	parser.Float32Var(&self.amp, "a", 0.5, "The amplitude of the signal to mix in.  Between 0 and 1.")
 	ch := parser.String("c", "left", "The channel to mix the signal into. May be all, left," +
 		" right, or an integer between 0 and the number of channels in the input signal.") 
+	shape := parser.String("s", "triangle", "The type of LFO signal to generate: square, sine, sawtoothe, or triangle")
+	modTarg := parser.String("m", "volume", "What part of the signal should the LFO modulate: volume, pitch, cutoff")
 	parser.Parse()
 
 	if amp < 0 || amp > 1 {
@@ -56,29 +72,54 @@ func (self *LFOFilter) GetType() int {
 }
 
 func (self *LFOFilter) Start() {
-	
-}
-
-func (self *LFOFilter) mixAll() {
 	header := <-self.ctx.HeaderSource
 	self.ctx.HeaderSink <- header
+
+	osc := self.getTriangleOscillator(&header)
+
+	if self.mixchan == ALL {
+		self.mixAll(osc)
+	} else {
+		self.mixOne(osc)
+	}
+}
+
+func (self *LFOFilter) mixAll(osc func() float32) {
 
 	for frame := range self.ctx.Source {
 
 		self.ctx.Sink <- frame
-	}
-	
+	}	
 }
 
-func (self *LFOFilter) mixOne() {
-	header := <-self.ctx.HeaderSource
-	self.ctx.HeaderSink <- header
+func (self *LFOFilter) mixOne(osc func() float32) {
 
 	for frame := range self.ctx.Source {
 
 		self.ctx.Sink <- frame
+	}	
+}
+/**
+ * Get 
+ */
+func (self *LFOFilter) getTriangleOscillator(header *afp.StreamHeader) (func() float32) {
+	period := header.SampleRate / self.freq //Roughly, period in slices
+	delta := 4 * self.amp / period 
+	amp := self.amp //Wary of references to self in a lambda
+	var val float32 = 0
+
+	return func() float32 {
+		ret := val
+
+		val += delta
+
+		if val >= amp || val <= -amp {
+			delta = -delta
+		} 
+
+		return ret
 	}
-	
+
 }
 
 func NewLFO() afp.Filter {
