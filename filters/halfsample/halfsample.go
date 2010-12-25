@@ -23,12 +23,12 @@ func (self *Halfsampler) Init(ctx *afp.Context, args []string) os.Error {
 	exp := parser.Bool("exp", false, "Use an exponential convolution before downsampling")
 	parser.Parse()
 
-	if linear == exp {
+	if *linear == *exp {
 		return os.NewError("You must specify exactly one convolution algorithm. " +
 			" Available choices are: linear, exp")
 	}
 
-	if linear {
+	if *linear {
 		self.downsampler = linearDS
 	} else {
 		self.downsampler = expDS
@@ -78,16 +78,17 @@ func NewHalfsampler() afp.Filter {
 //where I_-1 refers to the last sample in the previous frame  
 func linearDS(carryOver []float32, input [][]float32) [][]float32 {
     var outSample float32
-	output := input[:len(input / 2)]
+	output := input[:len(input) / 2]
 
     for in, out := 0, 0; in < len(input); out++ {
-		for j := range input[i] {
+		for j := range input[in] {
 			outSample = carryOver[j] + input[in][j] / 2
 			carryOver[j] = input[in + 1][j] / 4;
 			output[out][j] = outSample + carryOver[j]
 		}
 		in += 2
 	}
+	return output
 }
 
 //This algorithm adapted from mumart[AT]gmail[DOT]com
@@ -96,15 +97,16 @@ func linearDS(carryOver []float32, input [][]float32) [][]float32 {
 //So, the O_n, the nth sample in the output, may be expressed as:
 // O_n = sum I_k / 2^(2n - k + 1) for k = 0 to 2n
 //Where I_k is the kth sample in the input
-func expDS(carryOver []float32, input [][]float32) [][]float32 {
-	output := input[:len(input / 2)]
+func expDS(carry []float32, input [][]float32) [][]float32 {
+	output := input[:len(input) / 2]
 
     for in, out := 0, 0; in < len(input); out++ {
-		for ch := range input[i] {
-			carry[ch] = (carry[ch] + input[in]) / 2;
+		for ch := range input[in] {
+			carry[ch] = (carry[ch] + input[in][ch]) / 2;
 			output[out][ch] = carry[ch] 
-			carry[ch] = (carry[ch] + input[in + 1] ) / 2;
+			carry[ch] = (carry[ch] + input[in + 1][ch] ) / 2;
 		}
 		in += 2;
     }
+	return output
 }
