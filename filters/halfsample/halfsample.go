@@ -72,36 +72,39 @@ func NewHalfsampler() afp.Filter {
 
 //This algorithm adapted from mumart[AT]gmail[DOT]com
 //Found at http://www.musicdsp.org/showArchiveComment.php?ArchiveID=214
+//If O_k is the kth sample in the output and I_k the kth symbol in the input,
+//then each sample in the input will equal:
+// O_n = I_{2n - 1}/4 + I_{2n}/2 + I_{2n + 1}
+//where I_-1 refers to the last sample in the previous frame  
 func linearDS(carryOver []float32, input [][]float32) [][]float32 {
     var outSample float32
-	outBuff := input[:len(input / 2)]
+	output := input[:len(input / 2)]
 
-    for i, outInd := 0, 0; i < len(input); outInd++ {
+    for in, out := 0, 0; in < len(input); out++ {
 		for j := range input[i] {
-			output_sam =  carryOver[j] + input[i][j] / 2
-			i++
-			
-			carryOver[j] = input[i][j] / 2;
-			i++
-			
-			outBuff[outInd][j] = output_sam + carryOver[j]
+			outSample = carryOver[j] + input[in][j] / 2
+			carryOver[j] = input[in + 1][j] / 4;
+			output[out][j] = outSample + carryOver[j]
 		}
+		in += 2
 	}
 }
 
 //This algorithm adapted from mumart[AT]gmail[DOT]com
 //Found at http://www.musicdsp.org/showArchiveComment.php?ArchiveID=214
-func expDS( int *input_buf, int *output_buf, int output_count ) {
-    int input_idx, output_idx, input_ep1;
-    output_idx = 0;
-    input_idx = 0;
-    input_ep1 = output_count * 2;
-    while( input_idx < input_ep1 ) {
-        filter_state = ( filter_state + input_buf[ input_idx ] ) >> 1;
-        output_buf[ output_idx ] = filter_state;
-        filter_state = ( filter_state + input_buf[ input_idx + 1 ] ) >> 1;
-        input_idx += 2;
-        output_idx += 1;
+//We mix an exponentially decreasing fraction of each sample into every one following
+//So, the O_n, the nth sample in the output, may be expressed as:
+// O_n = sum I_k / 2^(2n - k + 1) for k = 0 to 2n
+//Where I_k is the kth sample in the input
+func expDS(carryOver []float32, input [][]float32) [][]float32 {
+	output := input[:len(input / 2)]
+
+    for in, out := 0, 0; in < len(input); out++ {
+		for ch := range input[i] {
+			carry[ch] = (carry[ch] + input[in]) / 2;
+			output[out][ch] = carry[ch] 
+			carry[ch] = (carry[ch] + input[in + 1] ) / 2;
+		}
+		in += 2;
     }
 }
-*/
