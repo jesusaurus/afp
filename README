@@ -14,9 +14,9 @@ Basic command invocation is:
 
 For example, to simply pipe a file to the speakers:
 
-./afp libavsource ! portaudiosink
+./afp libavsource -i "file.mp3" ! pasink
 
 To do the same, but with a 100ms delayed echo mixed in:
 
-./afp libavsource ! delay -t 100 ! portaudiosink
+./afp libavsource -i "file.mp3" ! delay -t 100 ! pasink
 

@@ -16,6 +16,7 @@ import (
 	"afp/filters/delay"
 	"afp/filters/portaudio"
 	"afp/filters/alsa"
+	"afp/filters/echo"
 	"afp/filters/distort"
 	"afp/filters/pass"
 	"afp/filters/buffer"
@@ -39,6 +40,7 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter{
 	"delay":       delay.NewDelayFilter,
 	"alsasource":  alsa.NewAlsaSource,
 	"alsasink":    alsa.NewAlsaSink,
+	"echolink"      : echo.NewEchoFilter,
 	"distort":     distort.NewFilter,
 	"lowpass":     pass.NewLowPassFilter,
 	"buffer":      buffer.NewBuffer,
