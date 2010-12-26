@@ -44,3 +44,20 @@ func GetSawtootheOscillator(samplerate, freq, amp float32) (func() float32) {
 	}
 }
 
+func GetSquareOscillator(samplerate, freq, amp float32) (func() float32) {
+	halfperiod := int(samplerate / (2 * freq)) //Roughly, period in slices
+	var val float32 = amp
+	var i := 0
+	
+	return func() float32 {
+		ret := val
+
+		if i++; i >= halfperiod {
+			i = 0
+			val = -val
+		}
+
+		return ret
+	}
+}
+
