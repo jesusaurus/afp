@@ -59,6 +59,9 @@ void init_decoding(void) {
 
     /* register all the codecs */
     avcodec_register_all();
+
+	/* hush! */
+	av_log_set_level(AV_LOG_QUIET);
 }
 
 
@@ -70,7 +73,10 @@ void init_decoding(void) {
  * @return 0 on success, -1 on error
  */
 int prepare_decoding(char *filename, AVDecodeContext *context) {
-	int err, len, sample_size;
+	int err, len;
+
+	/* initialize storage for the AVPacket */
+    av_init_packet(&context->Packet);
 
 	/* use libavformat to open the source file; initializes AVFormatContext */
     if ((err = av_open_input_file(&context->Fctx, filename, NULL, 0, NULL)) < 0) {
@@ -85,33 +91,23 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 		return -1;
     }
 
-	// char buf[256];
-	// AVStream *st = context->Fctx->streams[0];
-    
-	// avcodec_string(buf, sizeof(buf), st->codec, 0);
-	// fprintf(stderr, "codec string: %s", buf);
-	// dump_format(context->Fctx, 0, filename, 0);
+	AVCodecContext *decoder = context->Fctx->streams[0]->codec;
+	context->Cctx = decoder;
 
-	/* initialize the AVPacket */
-    av_init_packet(&context->Packet);
-
-#ifdef AVCORE_SAMPLEFMT_H
-	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
-	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
-#else
-	enum CodecID guessed_codec = CODEC_ID_MP3;
-#endif
+    /* set up Info context */
+	context->Info.Content_length = 0;
+	context->Info.Sample_rate = decoder->sample_rate;
+	context->Info.Channels = decoder->channels;
+	context->Info.Frame_size = decoder->frame_size;
+	context->Info.Sample_size = av_get_bits_per_sample_fmt(decoder->sample_fmt) >> 3;
 
 	/* find the audio decoder */
-    context->Codec = avcodec_find_decoder(guessed_codec);
+    context->Codec = avcodec_find_decoder(decoder->codec_id);
     if (!context->Codec) {
         fprintf(stderr, "codec not found\n");
 		return -1;
     }
 	
-	/* set up the codec context */
-    context->Cctx = avcodec_alloc_context();
-
     /* open the codec */
     if (avcodec_open(context->Cctx, context->Codec) < 0) {
         fprintf(stderr, "could not open codec\n");
@@ -130,50 +126,6 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
 		return -1;
 	}
 
-    /* set up Info context */
-	context->Info.Content_length = 0;
-
-	AVStream *st = context->Fctx->streams[0];
-    AVCodecContext *dec = st->codec;
-
-	context->Info.Sample_rate = dec->sample_rate;
-	context->Info.Channels = dec->channels;
-	context->Info.Frame_size = dec->frame_size;
-
-#ifdef AVCORE_SAMPLEFMT_H
-	/* we can rely on the new AV_SAMPLE_FMT_* from avcore/samplefmt.h */
-	switch(context->Cctx->sample_fmt) {
-	    case AV_SAMPLE_FMT_U8:          ///< unsigned 8 bits
-			sample_size = 1;
-			break;
-	    case AV_SAMPLE_FMT_S16:         ///< signed 16 bits
-			sample_size = 2;
-			break;
-	    case AV_SAMPLE_FMT_S32:         ///< signed 32 bits
-			sample_size = 4;
-			break;
-		default:
-			fprintf(stderr, "Unsupported sample format: %d\n", context->Cctx->sample_fmt);
-			return -1;
-	}
-#else
-	/* use SAMPLE_FMT_* from avcodec/avcodec.h */
-	switch(context->Cctx->sample_fmt) {
-	    case SAMPLE_FMT_U8:          ///< unsigned 8 bits
-			sample_size = 1;
-			break;
-	    case SAMPLE_FMT_S16:         ///< signed 16 bits
-			sample_size = 2;
-			break;
-	    case SAMPLE_FMT_S32:         ///< signed 32 bits
-			sample_size = 4;
-			break;
-		default:
-			fprintf(stderr, "Unsupported sample format: %d\n", context->Cctx->sample_fmt);
-			return -1;
-	}
-#endif
-	context->Info.Sample_size = sample_size;
 	context->first_frame_used = 0;
 
 	return 0;
@@ -207,15 +159,20 @@ int decode_packet(AVDecodeContext *context, int *decoded_bytes) {
 		/* we'll take as much as you can give us */
         out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
+        // av_pkt_dump_log(NULL, AV_LOG_DEBUG, &pkt, 1);
+
 #ifdef AVCORE_SAMPLEFMT_H
 		len = avcodec_decode_audio3(context->Cctx, (short *)context->Outbuf, &out_size, &context->Packet);
+
+		// fprintf(stderr, "len: %d, dts: %lld pts: %lld pkt size: %d out size: %d duration: %d pos %lld\n", len,
+		// 			context->Packet.dts, context->Packet.pts, context->Packet.size, out_size, context->Packet.duration, context->Packet.pos);
 #else
 		AVPacket *packet = &context->Packet;
 		uint8_t *packetData = packet->data;
 		int packetSize = packet->size;
 		len = avcodec_decode_audio2(context->Cctx, (short *)context->Outbuf, &out_size, packetData, packetSize);
 #endif
-        if (out_size < 0) {
+        if (len < 0) {
             fprintf(stderr, "Error while decoding, len: %d, out_size: %d\n", len, out_size);
 			return -1;
         }
