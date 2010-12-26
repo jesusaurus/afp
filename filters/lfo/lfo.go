@@ -99,9 +99,7 @@ func (self *LFOFilter) mixOne(osc func() float32) {
 		self.ctx.Sink <- frame
 	}	
 }
-/**
- * Get 
- */
+
 func (self *LFOFilter) getTriangleOscillator(header *afp.StreamHeader) (func() float32) {
 	period := header.SampleRate / self.freq //Roughly, period in slices
 	delta := 4 * self.amp / period 
