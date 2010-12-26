@@ -26,3 +26,21 @@ func GetTriangleOscillator(samplerate, freq, amp float32) (func() float32) {
 	}
 }
 
+func GetSawtootheOscillator(samplerate, freq, amp float32) (func() float32) {
+	period := samplerate / freq //Roughly, period in slices
+	delta := 2 * amp / period 
+	var val float32 = 0
+
+	return func() float32 {
+		ret := val
+
+		val += delta
+
+		if val >= amp {
+			val = -amp
+		} 
+
+		return ret
+	}
+}
+
