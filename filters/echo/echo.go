@@ -40,6 +40,8 @@ func (self *EchoFilter) Start() {
     self.header = <-self.context.HeaderSource
     self.context.HeaderSink <- self.header
 
+    offset := 20 //magic number
+
     buffer := <-self.context.Source
     frameSize := len(buffer)
     //make the buffer 2x the frame size
@@ -50,8 +52,7 @@ func (self *EchoFilter) Start() {
             for j := int8(0); j < self.header.Channels; j++ {
                 //ECHO, Echo, echo...
                 //buffer[i+1][j] += buffer[i][j] * self.decay
-                //what do we really want to do here?
-
+                buffer[i+offset][j] += buffer[i][j] * self.decay
             }
         }
 
@@ -60,11 +61,18 @@ func (self *EchoFilter) Start() {
         buffer = append(buffer, nextFrame...)
     }
 
-    //Flush the buffer
-    length = len(buffer)
+
+    //TODO: pad with silence
+
+    //flush the buffer
+    length := len(buffer)
     for i := 0; i < length; i++ {
         //apply echo/reverb
+        for j := int8(0); j < self.header.Channels; j++ {
+            buffer[i+offset][j] += buffer[i][j] * self.decay
+        }
 
+        //wrap
         if i == frameSize {
             self.context.Sink <- buffer[0:frameSize]
             buffer = buffer[frameSize:]
