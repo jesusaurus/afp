@@ -3,7 +3,7 @@
 // MIT license. Please see the file LICENSE for license details.
 //
 // The null package defines a set of filters which do nothing, mostly for testing purposes
-// NullSource: Close without passing any data through the pipeline
+// NullSource: Output silence
 // NullLink: Pass data straight through without processing
 // NullSink: Discard all data
 
@@ -12,8 +12,7 @@ package null
 import (
 	"afp"
 	"os"
-	/*	"sync"
-		"runtime" */
+	"afp/flags"
 )
 //Dummy parent struct, only defines Init/Stop
 type nullFilter struct {
@@ -32,10 +31,40 @@ func (self *nullFilter) Stop() os.Error {
 
 type NullSource struct {
 	nullFilter
+	time, samplerate, framesize, channels int
 }
 
 func NewNullSource() afp.Filter {
-	return &NullSource{nullFilter{}}
+	return &NullSource{nullFilter : nullFilter{}}
+}
+
+func (self *NullSource) Init(ctx *afp.Context, args []string) os.Error {
+	self.ctx = ctx
+
+	parser := flags.FlagParser(args)
+	parser.IntVar(&self.time, "t", 10, "Time in seconds of silence to output")
+	parser.IntVar(&self.samplerate, "s", 44100, "Sample rate to output.")
+	parser.IntVar(&self.framesize, "f", 256, "Frame size to output.")
+	parser.IntVar(&self.channels, "c", 2, "Number of channels in output signal")
+	parser.Parse()
+
+	if self.time < 0 {
+		os.NewError("Time must be greater than 0.")
+	}
+
+	if self.samplerate < 1 {//This should probably be higher
+		os.NewError("Sample rate must be at least 1.")
+	}
+
+	if self.framesize < 1 {
+		os.NewError("Frame size must be at least 1.")
+	}
+
+	if self.channels < 1 {	
+		os.NewError("Channels must be at least 1.")
+	}
+
+	return nil
 }
 
 func (self *NullSource) GetType() int {
@@ -43,12 +72,33 @@ func (self *NullSource) GetType() int {
 }
 
 func (self *NullSource) Start() {
+	length := int64(self.time) * int64(self.samplerate) //Overflow paranoia
+
 	self.ctx.HeaderSink <- afp.StreamHeader{
-		Version:       1,
-		Channels:      1,
-		SampleSize:    0,
-		SampleRate:    0,
-		ContentLength: 0,
+	Version:       1,
+	Channels:      int8(self.channels),
+	SampleSize:    4,
+	SampleRate:    int32(self.samplerate),
+	FrameSize:     int32(self.framesize),
+	ContentLength: length,
+	}
+
+	frames := length / int64(self.framesize)
+	if length % int64(self.framesize) != 0 {
+		frames++
+	}
+		
+	for i := int64(0); i < frames; i++ {
+		raw := make([]float32, self.framesize * self.channels)
+		f := make([][]float32, self.framesize)
+
+		for i, s, e := 0, 0, self.channels; i < self.framesize; i++ {
+			f[i] = raw[s:e]
+			s = e
+			e += self.channels
+		}
+
+		self.ctx.Sink <- f
 	}
 }
 

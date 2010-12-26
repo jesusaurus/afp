@@ -9,6 +9,7 @@ package <packagename>
 
 import (
 	"afp"
+	"afp/flags"
 	"os"
 )
 
@@ -18,6 +19,10 @@ type SkeletonFilter struct {
 
 func (self *SkeletonFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
+
+	parser := flags.FlagParser(args)
+	a := parser.Int("a", DEFAULT_VALUE, "Argument Description")
+	parser.Parse()
 
 	return nil
 }
@@ -36,8 +41,10 @@ func (self *SkeletonFilter) Start() {
 	header := <-self.ctx.HeaderSource
 	self.ctx.HeaderSink <- header
 
+	//Then process the content til there's no more to be had
 	for frame := range self.ctx.Source {
 		//Process frame
+		self.ctx.Sink <- frame
 	}
 }
 

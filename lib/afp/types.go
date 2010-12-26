@@ -18,7 +18,8 @@ const (
 	PIPE_LINK
 )
 
-const HEADER_LENGTH = (1 + // Version
+const HEADER_LENGTH = (
+	1 + // Version
 	1 + // Channels
 	1 + // SampleSize
 	4 + // SampleRate

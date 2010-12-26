@@ -2,23 +2,26 @@
 // This source code is released under the terms of the
 // MIT license. Please see the file LICENSE for license details.
 
-//This is not a legal Go program, rather it provides a skeletal
-//filter to serve as a minimal base for developing filters.
-
 package buffer
 
 import (
 	"afp"
 	"afp/lib/util"
+	"afp/flags"
 	"os"
 )
 
 type BufferFilter struct {
 	ctx *afp.Context
+	toBuffer int
 }
 
 func (self *BufferFilter) Init(ctx *afp.Context, args []string) os.Error {
 	self.ctx = ctx
+
+	parser := flags.FlagParser(args)
+	parser.IntVar(&self.toBuffer, "b", afp.CHAN_BUF_LEN, "The number of frames to buffer.")
+	parser.Parse()
 
 	return nil
 }
@@ -28,15 +31,17 @@ func (self *BufferFilter) Stop() os.Error {
 }
 
 func (self *BufferFilter) GetType() int {
-	return afp.PIPE_< SOURCE | LINK | SINK >
+	return afp.PIPE_LINK
 }
 
 func (self *BufferFilter) Start() {
 	header := <-self.ctx.HeaderSource
 	self.ctx.HeaderSink <- header
 
-	for frame := range self.ctx.Source {
+	source := util.Buffer(self.toBuffer, self.ctx.Source)
 
+	for frame := range source {
+		self.ctx.Sink <- frame
 	}
 }
 

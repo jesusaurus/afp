@@ -4,7 +4,6 @@
 
 package main
 
-
 //In order to rebuild afp to include your filter, import it below..
 import (
 	"afp"
@@ -17,6 +16,8 @@ import (
 	"afp/filters/portaudio"
 	"afp/filters/distort"
 	"afp/filters/pass"
+	"afp/filters/buffer"
+	"afp/filters/halfsample"
 )
 
 //And add a key : value pair to the map below, where the key is a string 
@@ -36,4 +37,6 @@ var filters map[string]func() afp.Filter = map[string]func() afp.Filter{
 	"delay":       delay.NewDelayFilter,
 	"distort":     distort.NewFilter,
 	"lowpass":     pass.NewLowPassFilter,
+	"buffer":      buffer.NewBuffer,
+	"halfsample":  halfsample.NewHalfsampler,
 }
