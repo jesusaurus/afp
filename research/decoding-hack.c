@@ -84,6 +84,8 @@ static void audio_decode_example(const char *filename, const char *outfilename)
         exit(1);
     }
 
+	enum CodecID guessed_codec;
+
 	for (i = 0; i < fctx->nb_streams; i++) {
 		AVStream *st = fctx->streams[i];
         AVCodecContext *dec = st->codec;
@@ -93,16 +95,14 @@ static void audio_decode_example(const char *filename, const char *outfilename)
         enum AVSampleFormat audio_sample_fmt  = dec->sample_fmt;
         
 		fprintf(stderr, "channels: %d sample_rate: %d frame_size: %d\n", audio_channels, audio_sample_rate, dec->frame_size);
-		
+		guessed_codec = dec->codec_id;
 	}
-
-	fprintf(stderr, "AVERROR(EAGAIN): %d\n", AVERROR(EAGAIN));
 
 	dump_format(fctx, 0, filename, 0);
 	
-	AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
-	enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
-
+	// AVOutputFormat *guessed_format = av_guess_format(NULL, filename, NULL);
+	// enum CodecID guessed_codec = av_guess_codec(guessed_format, NULL, filename, NULL, AVMEDIA_TYPE_AUDIO);
+	
 	/* find the audio decoder */
     codec = avcodec_find_decoder(guessed_codec);
     if (!codec) {
@@ -110,11 +110,15 @@ static void audio_decode_example(const char *filename, const char *outfilename)
 		exit(1);
     }
 
-    c= avcodec_alloc_context();
+	fprintf(stderr, "Guessed codec: %s\n", codec->name);
 
+	c = fctx->streams[0]->codec;
+
+    // c= avcodec_alloc_context();
+    // 
     /* open the codec */
-    if (avcodec_open(c, codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
+    if ((err = avcodec_open(c, codec)) < 0) {
+        fprintf(stderr, "could not open codec: %d\n", err);
         exit(1);
     }
 
@@ -137,7 +141,8 @@ static void audio_decode_example(const char *filename, const char *outfilename)
 		/* did libavformat just hand us an ID3V1 tag? */
 		if (!((avpkt.data[0] == 'T') && (avpkt.data[1] == 'A') && (avpkt.data[2] == 'G'))) {
 	        len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
-	        if (out_size < 0) {
+	
+	        if (len < 0) {
 	            fprintf(stderr, "Error while decoding, len: %d, out_size: %d\n", len, out_size);
 	            exit(1);
 	        }
@@ -145,7 +150,7 @@ static void audio_decode_example(const char *filename, const char *outfilename)
 	        if (out_size > 0) {
 	            /* if a frame has been decoded, output it */
 	            fwrite(outbuf, 1, out_size, outfile);
-	        }
+	        }	
 		}
 
 		/* release memory */
