@@ -8,6 +8,8 @@ import (
 	"math"
 )
 
+const twoPi = 2 * math.Pi
+
 func GetTriangleOscillator(samplerate, freq, amp float32) (func() float32) {
 	period := samplerate / freq //Roughly, period in slices
 	delta := 4 * amp / period 
@@ -63,16 +65,16 @@ func GetSquareOscillator(samplerate, freq, amp float32) (func() float32) {
 
 func GetSineOscillator(samplerate, freq, amp float32) (func() float32) {
 	period := samplerate / freq //Roughly, period in slices
-	delta := period
-	var val float32 = 0
+	delta := twoPi / period
+	var x float32 = 0
 
 	return func() float32 {
-		ret := val
+		ret := amp * fastSine(x)
 
-		val += delta
+		x += delta
 
-		if val >= amp || val <= -amp {
-			delta = -delta
+		if x >= twoPi {
+			x -= twoPi
 		} 
 
 		return ret
@@ -91,12 +93,9 @@ func fastSine(x float32) float32 {
 		return -fastSine(x - math.Pi)
 	}
 
-	//Calculate powers of x.
-	x_3 := x * x * x
-	x_5 := x_3 * x * x
-	x_7 := x_5 * x * x
-	x_9 := x_7 * x * x
+	x2 := x * x
 
-	return x - x_3/6 + x_5/120 - x_7/5040 + x_9/362880
-
+	//We use a repeatedly factored representation to cut down on
+	// FP mults, and allow us to do all our divisions at compile time
+	return x * (1 - x2 * (1/6.0 - x2 * (1/120.0 - x2 * (1/5040.0 - x2 * 1/362880.0))))
 }
