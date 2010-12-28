@@ -9,6 +9,7 @@ import (
 	"afp"
 	"afp/flags"
 	"afp/libav"
+	"fmt"
 	"os"
 	"unsafe"
 )
@@ -67,7 +68,10 @@ func (self *LibAVSource) Init(ctx *afp.Context, args []string) os.Error {
 	}
 
 	libav.InitDecoding()
-	libav.PrepareDecoding(self.inFile, &self.dctx)
+	err := int(libav.PrepareDecoding(self.inFile, &self.dctx))
+	if err < 0 {
+		return os.NewError(fmt.Sprintf("Error loading input file: %d", err))
+	}
 
 	self.streamInfo = libav.StreamInfo(self.dctx)
 
