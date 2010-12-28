@@ -125,6 +125,10 @@ int prepare_decoding(char *filename, AVDecodeContext *context) {
         fprintf(stderr, "decode_packet: error %d\n", err);
 		return -1;
 	}
+	
+	if (context->Info.Frame_size == 0) {
+		context->Info.Frame_size = len / (context->Info.Channels * context->Info.Sample_size);
+	}
 
 	context->first_frame_used = 0;
 
