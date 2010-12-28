@@ -25,11 +25,15 @@ func InitDecoding() {
 	C.init_decoding()
 }
 
-func PrepareDecoding(infile string, context *AVDecodeContext) {
+func PrepareDecoding(infile string, context *AVDecodeContext) int {
 	p := C.CString(infile)
+
 	context.Context = new(C.AVDecodeContext)
-	C.prepare_decoding(p, context.Context)
+	err := int(C.prepare_decoding(p, context.Context))
+
 	C.free(unsafe.Pointer(p))
+
+	return err
 }
 
 func DecodePacket(context AVDecodeContext) int {
