@@ -45,16 +45,18 @@ func (self *EchoFilter) Start() {
     offset2 := 35 //magic number
     offset3 := 42 //magic number
 
-    drySignal := <-self.context.Source
+    drySignal := <-self.context.Source //[][]float32
     frameSize := len(drySignal)
     //make the dry signal buffer twice the frame size
     drySignal = append(drySignal, <-self.context.Source...)
     length := len(drySignal)
 
-    reflect1 := make([][]float32, length)
-    reflect2 := make([][]float32, length)
-    reflect3 := make([][]float32, length)
-    wetSignal := make([][]float32, length)
+    var (
+        reflect1 [][]float32
+        reflect2 [][]float32
+        reflect3 [][]float32
+        wetSignal [][]float32
+    )
 
     //a couple of empty buffers
     var zero []float32
@@ -66,18 +68,12 @@ func (self *EchoFilter) Start() {
         zeros = append(zeros, zero)
     }
 
-    //initialize our reflection buffers with silence
-    for i := 0; i < offset1; i++ {
-        reflect1[i] = zero
-        reflect2[i] = zero
-        reflect3[i] = zero
-    }
-    for i := offset1; i < offset2; i++ {
-        reflect2[i] = zero
-        reflect3[i] = zero
-    }
-    for i := offset2; i < offset3; i++ {
-        reflect3[i] = zero
+    for i := 0; i < 3; i++ {
+        //make our buffers 3 frames large
+        reflect1 = append(reflect1, zeros...)
+        reflect2 = append(reflect2, zeros...)
+        reflect3 = append(reflect3, zeros...)
+        wetSignal = append(wetSignal, zeros...)
     }
 
     for nextFrame := range self.context.Source {
@@ -90,7 +86,7 @@ func (self *EchoFilter) Start() {
                 reflect2[i+offset2][j] = drySignal[i][j] * self.decay
                 reflect3[i+offset3][j] = drySignal[i][j] * self.decay
 
-                wetSignal[i][j] = reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
+                wetSignal[i][j] = drySignal[i][j]// + reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
             }
         }
 
@@ -117,7 +113,7 @@ func (self *EchoFilter) Start() {
 
         //wrap
         if i == frameSize {
-            self.context.Sink <- wetSignal[0:frameSize]
+            self.context.Sink <- drySignal[0:frameSize]
             wetSignal = wetSignal[frameSize:]
             drySignal = drySignal[frameSize:]
             i = 0
