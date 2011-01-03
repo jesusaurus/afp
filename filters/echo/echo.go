@@ -57,11 +57,11 @@ func (self *EchoFilter) Start() {
     wetSignal := make([][]float32, length)
 
     //a couple of empty buffers
-    var zero float32[]
-    for _, _ := range drySignal[0] {//we don't care about the data, just the dimensions
+    var zero []float32
+    for _, _ = range drySignal[0] {//we don't care about the data, just the dimensions
         zero = append(zero, 0)
     }
-    var zeros float32[][]
+    var zeros [][]float32
     for i := 0; i < frameSize; i++ {
         zeros = append(zeros, zero)
     }
@@ -71,13 +71,13 @@ func (self *EchoFilter) Start() {
         reflect1[i] = zero
         reflect2[i] = zero
         reflect3[i] = zero
-    } for i < offset2 {
+    }
+    for i := offset1; i < offset2; i++ {
         reflect2[i] = zero
         reflect3[i] = zero
-        i++
-    } for i < offset3 {
+    }
+    for i := offset2; i < offset3; i++ {
         reflect3[i] = zero
-        i++
     }
 
     for nextFrame := range self.context.Source {
@@ -90,13 +90,13 @@ func (self *EchoFilter) Start() {
                 reflect2[i+offset2][j] = drySignal[i][j] * self.decay
                 reflect3[i+offset3][j] = drySignal[i][j] * self.decay
 
-                wetSignal[i][j] = reflect1[i] + reflect2[i] + reflect3[i]
+                wetSignal[i][j] = reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
             }
         }
 
         self.context.Sink <- wetSignal[0:frameSize]
         wetSignal = wetSignal[frameSize:]
-        wetSignal = append(wetSignal, zeros)
+        wetSignal = append(wetSignal, zeros...)
 
         drySignal = drySignal[frameSize:]
         drySignal = append(drySignal, nextFrame...)
@@ -112,7 +112,7 @@ func (self *EchoFilter) Start() {
             reflect2[i+offset2][j] = drySignal[i][j] * self.decay
             reflect3[i+offset3][j] = drySignal[i][j] * self.decay
 
-            wetSignal[i][j] = reflect1[i] + reflect2[i] + reflect3[i]
+            wetSignal[i][j] = reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
         }
 
         //wrap
