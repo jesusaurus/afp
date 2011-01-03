@@ -40,42 +40,86 @@ func (self *EchoFilter) Start() {
     self.header = <-self.context.HeaderSource
     self.context.HeaderSink <- self.header
 
-    offset := 20 //magic number
+    //delay offsets for 3 reflections
+    offset1 := 20 //magic number
+    offset2 := 35 //magic number
+    offset3 := 42 //magic number
 
-    buffer := <-self.context.Source
-    frameSize := len(buffer)
-    //make the buffer 2x the frame size
-    buffer = append(buffer, <-self.context.Source...)
+    drySignal := <-self.context.Source
+    frameSize := len(drySignal)
+    //make the dry signal buffer twice the frame size
+    drySignal = append(drySignal, <-self.context.Source...)
+    length := len(drySignal)
+
+    reflect1 := make([][]float32, length)
+    reflect2 := make([][]float32, length)
+    reflect3 := make([][]float32, length)
+    wetSignal := make([][]float32, length)
+
+    //a couple of empty buffers
+    var zero float32[]
+    for _, _ := range drySignal[0] {//we don't care about the data, just the dimensions
+        zero = append(zero, 0)
+    }
+    var zeros float32[][]
+    for i := 0; i < frameSize; i++ {
+        zeros = append(zeros, zero)
+    }
+
+    //initialize our reflection buffers with silence
+    for i := 0; i < offset1; i++ {
+        reflect1[i] = zero
+        reflect2[i] = zero
+        reflect3[i] = zero
+    } for i < offset2 {
+        reflect2[i] = zero
+        reflect3[i] = zero
+        i++
+    } for i < offset3 {
+        reflect3[i] = zero
+        i++
+    }
 
     for nextFrame := range self.context.Source {
+
         for i := 0; i < frameSize; i++ {
             for j := int8(0); j < self.header.Channels; j++ {
                 //ECHO, Echo, echo...
-                //buffer[i+1][j] += buffer[i][j] * self.decay
-                buffer[i+offset][j] += buffer[i][j] * self.decay
+
+                reflect1[i+offset1][j] = drySignal[i][j] * self.decay
+                reflect2[i+offset2][j] = drySignal[i][j] * self.decay
+                reflect3[i+offset3][j] = drySignal[i][j] * self.decay
+
+                wetSignal[i][j] = reflect1[i] + reflect2[i] + reflect3[i]
             }
         }
 
-        self.context.Sink <- buffer[0:frameSize]
-        buffer = buffer[frameSize:]
-        buffer = append(buffer, nextFrame...)
-    }
+        self.context.Sink <- wetSignal[0:frameSize]
+        wetSignal = wetSignal[frameSize:]
+        wetSignal = append(wetSignal, zeros)
 
+        drySignal = drySignal[frameSize:]
+        drySignal = append(drySignal, nextFrame...)
+    }
 
     //TODO: pad with silence
 
-    //flush the buffer
-    length := len(buffer)
+    //flush the signals
     for i := 0; i < length; i++ {
         //apply echo/reverb
         for j := int8(0); j < self.header.Channels; j++ {
-            buffer[i+offset][j] += buffer[i][j] * self.decay
+            reflect1[i+offset1][j] = drySignal[i][j] * self.decay
+            reflect2[i+offset2][j] = drySignal[i][j] * self.decay
+            reflect3[i+offset3][j] = drySignal[i][j] * self.decay
+
+            wetSignal[i][j] = reflect1[i] + reflect2[i] + reflect3[i]
         }
 
         //wrap
         if i == frameSize {
-            self.context.Sink <- buffer[0:frameSize]
-            buffer = buffer[frameSize:]
+            self.context.Sink <- wetSignal[0:frameSize]
+            wetSignal = wetSignal[frameSize:]
+            drySignal = drySignal[frameSize:]
             i = 0
             length -= frameSize
         }
