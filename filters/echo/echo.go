@@ -52,9 +52,6 @@ func (self *EchoFilter) Start() {
     length := len(drySignal)
 
     var (
-        reflect1 [][]float32
-        reflect2 [][]float32
-        reflect3 [][]float32
         wetSignal [][]float32
     )
 
@@ -70,9 +67,6 @@ func (self *EchoFilter) Start() {
 
     for i := 0; i < 3; i++ {
         //make our buffers 3 frames large
-        reflect1 = append(reflect1, zeros...)
-        reflect2 = append(reflect2, zeros...)
-        reflect3 = append(reflect3, zeros...)
         wetSignal = append(wetSignal, zeros...)
     }
 
@@ -81,12 +75,10 @@ func (self *EchoFilter) Start() {
         for i := 0; i < frameSize; i++ {
             for j := int8(0); j < self.header.Channels; j++ {
                 //ECHO, Echo, echo...
-
-                reflect1[i+offset1][j] = drySignal[i][j] * self.decay
-                reflect2[i+offset2][j] = drySignal[i][j] * self.decay
-                reflect3[i+offset3][j] = drySignal[i][j] * self.decay
-
-                wetSignal[i][j] = drySignal[i][j]// + reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
+                wetSignal[i][j] = (wetSignal[i][j] ) + (drySignal[i][j] * self.decay )
+                wetSignal[i+offset1][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
+                wetSignal[i+offset2][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
+                wetSignal[i+offset3][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
             }
         }
 
@@ -104,11 +96,10 @@ func (self *EchoFilter) Start() {
     for i := 0; i < length; i++ {
         //apply echo/reverb
         for j := int8(0); j < self.header.Channels; j++ {
-            reflect1[i+offset1][j] = drySignal[i][j] * self.decay
-            reflect2[i+offset2][j] = drySignal[i][j] * self.decay
-            reflect3[i+offset3][j] = drySignal[i][j] * self.decay
-
-            wetSignal[i][j] = reflect1[i][j] + reflect2[i][j] + reflect3[i][j]
+            wetSignal[i][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
+            wetSignal[i+offset1][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
+            wetSignal[i+offset2][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
+            wetSignal[i+offset3][j] = (wetSignal[i][j]  ) + (drySignal[i][j] * self.decay )
         }
 
         //wrap
