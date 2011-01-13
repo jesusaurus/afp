@@ -39,7 +39,7 @@ func (self *EchoFilter) Usage() {
 func (self *EchoFilter) Init(ctx *afp.Context, args []string) os.Error {
     self.context = ctx
     //TODO: add argument parsing for decay rate
-    self.decay = .2
+    self.decay = .35
 
     return nil
 }
@@ -49,9 +49,9 @@ func (self *EchoFilter) Start() {
     self.context.HeaderSink <- self.header
 
     //delay offsets for 3 reflections
-    offset1 := int32(20) //magic number
-    offset2 := int32(35) //magic number
-    offset3 := int32(42) //magic number
+    offset1 := int32(100) //magic number
+    offset2 := int32(250) //magic number
+    offset3 := int32(420) //magic number
 
     //make the input buffer twice the frame size
     self.drySignal = <-self.context.Source
@@ -73,14 +73,21 @@ func (self *EchoFilter) Start() {
 
         for i := int32(0); i < self.header.FrameSize; i++ {
             for j := int8(0); j < self.header.Channels; j++ {
-                self.wetSignal[i][j] = self.drySignal[i][j]
-                self.wetSignal[i+offset1][j] = self.wetSignal[i+offset1][j] + (self.drySignal[i][j] * self.decay )
-                self.wetSignal[i+offset2][j] = self.wetSignal[i+offset2][j] + (self.drySignal[i][j] * self.decay )
-                self.wetSignal[i+offset3][j] = self.wetSignal[i+offset3][j] + (self.drySignal[i][j] * self.decay )
+                //three reflections
+                self.wetSignal[i+offset1][j] += (self.drySignal[i][j] * self.decay )
+                //self.wetSignal[i+offset2][j] += (self.drySignal[i][j] * self.decay )
+                //self.wetSignal[i+offset3][j] += (self.drySignal[i][j] * self.decay )
+
+                self.wetSignal[i][j] += self.drySignal[i][j]
+                self.wetSignal[i][j] += (self.wetSignal[i+offset1][j] * self.decay)
+                self.wetSignal[i][j] += (self.wetSignal[i+offset2][j] * self.decay)
+                self.wetSignal[i][j] += (self.wetSignal[i+offset3][j] * self.decay)
+                self.wetSignal[i][j] /= 4
+
+                outBuffer[i][j] = self.wetSignal[i][j]
             }
         }
 
-        outBuffer = self.wetSignal[0:self.header.FrameSize]
         self.context.Sink <- outBuffer
 
         self.wetSignal = self.wetSignal[self.header.FrameSize:]
@@ -99,18 +106,20 @@ func (self *EchoFilter) Start() {
 
         //apply echo/reverb
         for j := int8(0); j < self.header.Channels; j++ {
-            self.wetSignal[i][j] = (self.wetSignal[i][j]  ) + (self.drySignal[i][j] * self.decay )
-            self.wetSignal[i+offset1][j] = (self.wetSignal[i][j]  ) + (self.drySignal[i][j] * self.decay )
-            self.wetSignal[i+offset2][j] = (self.wetSignal[i][j]  ) + (self.drySignal[i][j] * self.decay )
-            self.wetSignal[i+offset3][j] = (self.wetSignal[i][j]  ) + (self.drySignal[i][j] * self.decay )
+            self.wetSignal[i][j] += self.drySignal[i][j]
+
+            //three reflections
+            self.wetSignal[i+offset1][j] += (self.drySignal[i][j] * self.decay )
+            //self.wetSignal[i+offset2][j] += (self.drySignal[i][j] * self.decay )
+            //self.wetSignal[i+offset3][j] += (self.drySignal[i][j] * self.decay )
+
+            outBuffer[i][j] = self.wetSignal[i][j]
         }
 
         //wrap
         if i == self.header.FrameSize {
-            outBuffer = self.wetSignal[0:self.header.FrameSize]
             self.context.Sink <- outBuffer
-
-            outBuffer := makeBuffer(self.header.FrameSize, self.header.Channels)
+            outBuffer = makeBuffer(self.header.FrameSize, self.header.Channels)
 
             self.wetSignal = self.wetSignal[self.header.FrameSize:]
             self.drySignal = self.drySignal[self.header.FrameSize:]
