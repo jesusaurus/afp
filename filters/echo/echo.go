@@ -8,6 +8,7 @@ package echo
 
 import (
     "afp"
+    "afp/flags"
     "os"
 )
 
@@ -38,8 +39,13 @@ func (self *EchoFilter) Usage() {
 
 func (self *EchoFilter) Init(ctx *afp.Context, args []string) os.Error {
     self.context = ctx
-    //TODO: add argument parsing for decay rate
-    self.decay = .35
+
+    //TODO: add tuning for the offset spread
+    parser := flags.FlagParser(args)
+    var d *float = parser.Float("d", .35, "The decay attenuation (0 - 1.0)")
+    parser.Parse()
+
+    self.decay = float32(*d)
 
     return nil
 }
@@ -48,6 +54,7 @@ func (self *EchoFilter) Start() {
     self.header = <-self.context.HeaderSource
     self.context.HeaderSink <- self.header
 
+    //TODO: add tuning for the offset spread
     //delay offsets for 3 reflections
     offset1 := int32(100) //magic number
     offset2 := int32(250) //magic number
@@ -82,6 +89,8 @@ func (self *EchoFilter) Start() {
                 self.wetSignal[i][j] += (self.wetSignal[i+offset1][j] * self.decay)
                 self.wetSignal[i][j] += (self.wetSignal[i+offset2][j] * self.decay)
                 self.wetSignal[i][j] += (self.wetSignal[i+offset3][j] * self.decay)
+
+                //TODO: add proper normalization
                 self.wetSignal[i][j] /= 4
 
                 outBuffer[i][j] = self.wetSignal[i][j]
